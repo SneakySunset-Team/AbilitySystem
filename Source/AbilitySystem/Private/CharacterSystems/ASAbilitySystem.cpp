@@ -14,16 +14,16 @@ void UASAbilitySystem::BeginPlay()
 	OwningCharacter = Cast<AASCharacter>(GetOwner());
 
 	AbilityOne = NewObject<UASAbility>(AbilityOnePrefab);
-	AbilityOne->Initialize(OwningCharacter, true);
+	AbilityOne->InitializePersistant(OwningCharacter, true);
 	
 	AbilityTwo = NewObject<UASAbility>(AbilityTwoPrefab);
-	AbilityTwo->Initialize(OwningCharacter, true);
+	AbilityTwo->InitializePersistant(OwningCharacter, true);
 	
 	AbilityThree = NewObject<UASAbility>(AbilityThreePrefab);
-	AbilityThree->Initialize(OwningCharacter, true);
+	AbilityThree->InitializePersistant(OwningCharacter, true);
 	
 	Ultimate = NewObject<UASAbility>(UltimatePrefab);
-	Ultimate->Initialize(OwningCharacter, true);
+	Ultimate->InitializePersistant(OwningCharacter, true);
 }
 
 void UASAbilitySystem::CastAbility(int AbilityIndex)

@@ -41,10 +41,6 @@ void AASProjectile::Tick(float DeltaTime)
 
 void AASProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (OtherActor->FindComponentByClass<UASAttributsManager>())
-	{
-		UASAttributsManager* AttributesManager = OtherActor->GetComponentByClass<UASAttributsManager>();		
-		OnHitDelegate.ExecuteIfBound(AttributesManager);
-	}
+	OnHitDelegate.ExecuteIfBound(OtherActor, NormalImpulse, Hit);
 }
 

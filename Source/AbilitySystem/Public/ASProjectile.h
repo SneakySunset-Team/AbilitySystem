@@ -8,7 +8,8 @@
 
 class UASAttributsManager;
 
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnHitDelegate, UASAttributsManager*, AttributsManager);
+DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnHitDelegate, AActor*, OtherActor, FVector, NormalImpulse, const FHitResult&, Hit);
+DECLARE_DYNAMIC_DELEGATE(FOnMaxDistanceReached);
 
 UCLASS()
 class ABILITYSYSTEM_API AASProjectile : public AActor
@@ -32,6 +33,7 @@ public:
 	AASProjectile();
 
 	FOnHitDelegate OnHitDelegate;
+	FOnMaxDistanceReached OnMaxDistanceReachedDelegate;
 	
 protected:
 	virtual void BeginPlay() override;

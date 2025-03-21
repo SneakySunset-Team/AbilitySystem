@@ -10,12 +10,18 @@ class UASEffect;
 class UASAttributsManager;
 class UASAttributs;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAbilityTrigger, UASAttributsManager*, AttributsManager);
+
 UCLASS(BlueprintType, Blueprintable)
 class ABILITYSYSTEM_API UASAbility : public UObject
 {
 	GENERATED_BODY()
 
 protected:
+	FOnAbilityTrigger OnCastAnimationStart;
+	FOnAbilityTrigger OnCastAnimationTrigger;
+	FOnAbilityTrigger OnCastAnimationEnd;
+	
 	UPROPERTY(EditAnywhere, Category = "AS|Stats")
 	int ManaCost;
 
@@ -33,15 +39,6 @@ protected:
 	// Going further would be implementing the TMap in the Ability System for the abilities.
 	UPROPERTY(EditAnywhere, Category = "AS|Stats")
 	TArray<TSubclassOf<UASEffect>> EffectsPrefabs;
-
-	UPROPERTY()
-	TArray<TObjectPtr<UASEffect>> Effects;
-
-	UPROPERTY(EditAnywhere, Category = "AS|Stats")
-	TSubclassOf<UASEffect> ManaCostEffectPrefab;
-	
-	UPROPERTY()	
-	TObjectPtr<UASEffect> ManaCostEffect;
 	
 	UPROPERTY()
 	TObjectPtr<UASAttributs> CasterAttributs;
@@ -54,29 +51,31 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<AASCharacter> OwningCharacter;
-
-	UPROPERTY()
-	TObjectPtr<UAnimInstance> OwningCharacter_AnimInstance;
-
 	
 	FTimerHandle CooldownTimerHandle;
 
 public:
 	UFUNCTION()
-	virtual void Initialize(AASCharacter* Owner, bool IsPersistantAbility);
-	
-	UFUNCTION()
-	void StartCasting();
+	virtual void InitializePersistant(AASCharacter* InOwner);
 
 	UFUNCTION()
-	virtual void EndCasting(FName NotifyName, const FBranchingPointNotifyPayload& Payload);
+	virtual void InitializeDuplicate(AASCharacter* InOwner);
+	
+	UFUNCTION()
+	virtual void StartCasting();
+
+	UFUNCTION()
+	virtual void OnAnimationStartCallback(UAnimMontage* Montage);
+	
+	UFUNCTION()
+	virtual void OnTriggerAnimationEventCallback(FName NotifyName, const FBranchingPointNotifyPayload& Payload);
+
+	UFUNCTION()
+	virtual void OnAnimationEndCallback(UAnimMontage* Montage, bool bInterrupted);
 	
 	UFUNCTION()
 	bool CanCast();
 
-
-	UFUNCTION()
-	void TriggerAbilityEffects(UASAttributsManager* TargetAttributsManager);
 	
 protected:
 	UFUNCTION()
