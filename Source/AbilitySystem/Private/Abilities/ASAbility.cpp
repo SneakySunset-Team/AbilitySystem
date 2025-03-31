@@ -36,7 +36,7 @@ void UASAbility::InitializePersistant(AASCharacter* InOwner)
 		if (IsCastFromPersistant)
 		{
 			UASEffect* Effect = NewObject<UASEffect>(InOwner, EffectPrefab);
-			Effect->Initialize(OwningCharacter->GetAttributsManager()->GetAttributs());
+			Effect->Initialize(OwningCharacter->GetAttributsManager());
 			EffectDelegate.AddDynamic(Effect, &UASEffect::ApplyEffect);
 		}
 	}
@@ -55,14 +55,32 @@ void UASAbility::InitializeDuplicate(AASCharacter* InOwner)
 
 void UASAbility::StartCasting()
 {
-	// In case of wanting to implement a cooldown reduction system I would change
-	// this timer to be in a Tick Function with a multiplier affected by a haste parameter in the attributs
-	GetWorld()->GetTimerManager().SetTimer(CooldownTimerHandle, this, &UASAbility::OnCooldownEnd, Cooldown, false, -1);
+	UASAttributsManager* TargetAttributesManager;
+	IsTargetUnderMouse(TargetAttributesManager);
 
+	CurrentTimer = Cooldown;
+	IsInCooldown = true;
+
+	
 	UGameplayStatics::PlaySoundAtLocation(this, OnStartCasting_Sound, OwningCharacter->GetActorLocation());	
 
 	UAnimInstance* OwningCharacter_AnimInstance = OwningCharacter->GetMesh()->GetAnimInstance();
 	OwningCharacter_AnimInstance->Montage_Play(OnStartCasting_AnimMontage);
+
+	RotateTowardsMouse();
+}
+
+void UASAbility::Tick(float DelaTime)
+{
+	if (IsInCooldown)
+	{
+		CurrentTimer -= DelaTime;
+		if (CurrentTimer <= 0)
+		{
+			IsInCooldown = false;
+			OnCooldownEnd();
+		}
+	}
 }
 
 void UASAbility::OnAnimationStartCallback(UAnimMontage* Montage)
@@ -71,6 +89,7 @@ void UASAbility::OnAnimationStartCallback(UAnimMontage* Montage)
 	{
 		OnCastAnimationStart.Broadcast(OwningCharacter->GetAttributsManager());
 		IsInCooldown = true;
+		CasterAttributsManager->EditStat(EStat::Mana, -ManaCost);
 		OwningCharacter->GetCharacterMovement()->Deactivate();
 	}
 }
@@ -109,7 +128,7 @@ void UASAbility::OnAnimationEndCallback(UAnimMontage* Montage, bool bInterrupted
 
 bool UASAbility::CanCast()
 {
-	int CasterMana = CasterAttributs->GetStat(EStat::Mana);
+	int CasterMana = CasterAttributsManager->Attributs.GetStat(EStat::Mana);
 	if (CasterMana >= ManaCost && !IsInCooldown)
 	{
 		return true;
@@ -127,4 +146,83 @@ UASAbility* UASAbility::CreateAbilityInstance(AActor* NewOwner)
 	UASAbility* AbilityInstance = NewObject<UASAbility>(NewOwner, GetClass());
 	AbilityInstance->InitializeDuplicate(OwningCharacter);
 	return AbilityInstance;
+}
+
+void UASAbility::RotateTowardsMouse()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(OwningCharacter->GetController());
+	if (!PlayerController) return;
+
+	// Get mouse position in screen space
+	float MouseX, MouseY;
+	PlayerController->GetMousePosition(MouseX, MouseY);
+    
+	// Convert mouse position to world space using a line trace
+	FVector WorldLocation, WorldDirection;
+	PlayerController->DeprojectScreenPositionToWorld(MouseX, MouseY, WorldLocation, WorldDirection);
+    
+	// Setup collision params for line trace
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(OwningCharacter);
+    
+	// Calculate start and end of line trace
+	FVector TraceStart = WorldLocation;
+	FVector TraceEnd = WorldLocation + WorldDirection * 10000.0f; // Far distance
+    
+	// Perform line trace to find where mouse ray intersects the ground
+	FHitResult HitResult;
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, CollisionParams))
+	{
+		// The hit location is where the mouse points in the world
+		FVector MouseWorldPosition = HitResult.Location;
+        
+		// Calculate the direction to face (ignoring Z component for a top-down game)
+		FVector CharacterLocation = OwningCharacter->GetActorLocation();
+		FVector DirectionToMouse = MouseWorldPosition - CharacterLocation;
+		DirectionToMouse.Z = 0; // Ignore height difference
+		DirectionToMouse = DirectionToMouse.GetSafeNormal();
+        
+		// Create rotation from direction
+		FRotator NewRotation = DirectionToMouse.Rotation();
+        
+		// Apply rotation instantly
+		OwningCharacter->SetActorRotation(NewRotation);
+	}
+}
+
+bool UASAbility::IsTargetUnderMouse(UASAttributsManager*& OutTarget)
+{
+	APlayerController* PlayerController = Cast<APlayerController>(OwningCharacter->GetController());
+	if (!PlayerController) return false;
+
+	// Get mouse position in screen space
+	float MouseX, MouseY;
+	PlayerController->GetMousePosition(MouseX, MouseY);
+    
+	// Convert mouse position to world space using a line trace
+	FVector WorldLocation, WorldDirection;
+	PlayerController->DeprojectScreenPositionToWorld(MouseX, MouseY, WorldLocation, WorldDirection);
+    
+	// Setup collision params for line trace
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(OwningCharacter);
+    
+	// Calculate start and end of line trace
+	FVector TraceStart = WorldLocation;
+	FVector TraceEnd = WorldLocation + WorldDirection * 10000.0f; // Far distance
+    
+	// Perform line trace to find where mouse ray intersects the ground
+	FHitResult HitResult;
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, CollisionParams))
+	{
+		UASAttributsManager* TargetAttributManager = HitResult.GetActor()->GetComponentByClass<UASAttributsManager>();
+		if (TargetAttributManager)
+		{
+			OutTarget = TargetAttributManager;
+			UE_LOG(LogTemp, Display, TEXT("Target Hit by Mouse"));
+			return true;
+		}
+	}
+
+	return false;
 }

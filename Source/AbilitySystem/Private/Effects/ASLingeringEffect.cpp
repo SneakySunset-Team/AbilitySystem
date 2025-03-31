@@ -5,6 +5,11 @@
 
 void UASLingeringEffect::ApplyEffect(UASAttributsManager* InTargetAttributsManager)
 {
+	if (!CanApplyEffect(InTargetAttributsManager))
+	{
+		return;
+	}
+	
 	TargetAttributManager = InTargetAttributsManager;
 	TargetAttributManager->AddLingeringEffect(this);
 	GetWorld()->GetTimerManager().SetTimer(Timer, this, &UASLingeringEffect::OnTimerEnded, Duration, false);

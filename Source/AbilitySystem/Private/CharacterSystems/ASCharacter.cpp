@@ -21,6 +21,7 @@ void AASCharacter::BeginPlay()
 	Super::BeginPlay();
 	
 	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!IsValid(PC)) return;
 	ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 	{
@@ -61,4 +62,36 @@ void AASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EnhancedInputComponent->BindAction(IA_Ultimate, ETriggerEvent::Triggered, this, &AASCharacter::OnTriggerUltimate);
 	}
 }
+
+float AASCharacter::GetHealthPercent()
+{
+	return AttributsManagerComponent->GetHealthPercent();
+}
+
+float AASCharacter::GetManaPercent()
+{
+	return AttributsManagerComponent->GetManaPercent();
+}
+
+int AASCharacter::GetAbilityOneCurrentCooldown()
+{
+	return FMath::CeilToInt(AbilitySystemComponent->GetAbilityOneCooldown());
+}
+
+int AASCharacter::GetAbilityTwoCurrentCooldown()
+{
+	return FMath::CeilToInt(AbilitySystemComponent->GetAbilityTwoCooldown());
+}
+
+int AASCharacter::GetAbilityThreeCurrentCooldown()
+{
+	return FMath::CeilToInt(AbilitySystemComponent->GetAbilityThreeCooldown());
+}
+
+int AASCharacter::GetUltimateCurrentCooldown()
+{
+	return FMath::CeilToInt(AbilitySystemComponent->GetUltimateCooldown());
+}
+
+
 

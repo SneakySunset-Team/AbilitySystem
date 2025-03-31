@@ -8,7 +8,7 @@
 class AASCharacter;
 class UASEffect;
 class UASAttributsManager;
-class UASAttributs;
+struct FASAttributs;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAbilityTrigger, UASAttributsManager*, AttributsManager);
 
@@ -47,7 +47,7 @@ protected:
 	TArray<TObjectPtr<UASEffect>> Effects;
 	
 	UPROPERTY()
-	TObjectPtr<UASAttributs> CasterAttributs;
+	TObjectPtr<UASAttributsManager> CasterAttributsManager;
 
 	UPROPERTY(EditAnywhere, Category = "AS|Cosmetics")
 	TObjectPtr<UAnimMontage> OnStartCasting_AnimMontage;
@@ -57,6 +57,9 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<AASCharacter> OwningCharacter;
+
+	UPROPERTY()
+	float CurrentTimer;
 	
 	FTimerHandle CooldownTimerHandle;
 
@@ -70,6 +73,9 @@ public:
 	UFUNCTION()
 	virtual void StartCasting();
 
+	UFUNCTION()
+	virtual void Tick(float DelaTime);
+	
 	UFUNCTION()
 	virtual void OnAnimationStartCallback(UAnimMontage* Montage);
 
@@ -90,13 +96,21 @@ protected:
 
 	UFUNCTION()
 	UASAbility* CreateAbilityInstance(AActor* NewOwner);
-	
+	void RotateTowardsMouse();
+	bool IsTargetUnderMouse(UASAttributsManager*& OutTarget);
+
 public:
 	//************ GETTERS ***************************************
 
 	UFUNCTION()
-	void SetCasterAttributs(UASAttributs* InCasterAttributs)
+	void SetCasterAttributs(UASAttributsManager* InCasterAttributs)
 	{
-		CasterAttributs = InCasterAttributs;
+		CasterAttributsManager = InCasterAttributs;
+	}
+
+	UFUNCTION()
+	float GetCurrentTimer()
+	{
+		return CurrentTimer;
 	}
 };

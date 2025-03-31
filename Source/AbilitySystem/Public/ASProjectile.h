@@ -29,6 +29,9 @@ protected:
 	UPROPERTY()
 	float Speed;
 
+	UPROPERTY()
+	float DistanceCrossed;
+	
 public:
 	AASProjectile();
 

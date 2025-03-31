@@ -14,7 +14,7 @@ void UASAbilityProjectile::InitializeDuplicate(AASCharacter* InOwner)
 		bool IsCastFromDuplicate = true;
 		
 		UASEffect* Effect = NewObject<UASEffect>(this, EffectPrefab);
-		Effect->Initialize(OwningCharacter->GetAttributsManager()->GetAttributs());
+		Effect->Initialize(OwningCharacter->GetAttributsManager());
 		switch (Effect->GetActivationType())
 		{
 		case EASActivationType::OnHit:
@@ -47,7 +47,7 @@ void UASAbilityProjectile::OnTriggerAnimationEventCallback(FName NotifyName, con
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	AASProjectile* Projectile = GetWorld()->SpawnActor<AASProjectile>(ProjectilePrefab, SpawnLocation, SpawnRotation, SpawnParameters);
-	Projectile->Initialize(ProjectileSpeed, ProjectileSpeed);
+	Projectile->Initialize(ProjectileMaxDistance, ProjectileSpeed);
 	UASAbilityProjectile* VolatileAbility = Cast<UASAbilityProjectile>(CreateAbilityInstance(Projectile));
 	Projectile->OnHitDelegate.BindDynamic(VolatileAbility, &UASAbilityProjectile::OnHitTargetCallback);
 	Projectile->OnMaxDistanceReachedDelegate.BindDynamic(VolatileAbility, &UASAbilityProjectile::OnProjectileMaxDistanceReachedCallback);

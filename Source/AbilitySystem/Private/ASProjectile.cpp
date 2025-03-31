@@ -31,10 +31,12 @@ void AASProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	DistanceCrossed += Speed * DeltaTime;
+	
 	FVector NewLocation = GetActorLocation() + (GetActorForwardVector() * Speed * DeltaTime);
-	if (FVector::Distance(StartingLocation, NewLocation) > MaxDistance)
+	UE_LOG(LogTemp, Warning, TEXT("%f"), DistanceCrossed);
+	if (DistanceCrossed > MaxDistance)
 	{
-		NewLocation = StartingLocation + GetActorForwardVector() * MaxDistance;
 		Destroy();
 	}
 	SetActorLocation(NewLocation);

@@ -10,16 +10,16 @@ void UASAttributsManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (Attributs->StatsContains(EStat::MaxHealth))
+	if (Attributs.StatsContains(EStat::MaxHealth))
 	{
-		Attributs->Stats.FindOrAdd(EStat::Health);
-		Attributs->Stats[EStat::Health] = Attributs->Stats[EStat::MaxHealth];
+		Attributs.Stats.FindOrAdd(EStat::Health);
+		Attributs.Stats[EStat::Health] = Attributs.Stats[EStat::MaxHealth];
 	}
 
-	if (Attributs->StatsContains(EStat::MaxMana))
+	if (Attributs.StatsContains(EStat::MaxMana))
 	{
-		Attributs->Stats.FindOrAdd(EStat::Mana);
-		Attributs->Stats[EStat::Mana] = Attributs->Stats[EStat::MaxMana];
+		Attributs.Stats.FindOrAdd(EStat::Mana);
+		Attributs.Stats[EStat::Mana] = Attributs.Stats[EStat::MaxMana];
 	}
 	
 }
@@ -32,38 +32,62 @@ void UASAttributsManager::TickComponent(float DeltaTime, ELevelTick TickType,
 
 void UASAttributsManager::AddLingeringEffect(UASLingeringEffect* LingeringEffect)
 {
-	Attributs->ActiveEffects.Add(LingeringEffect);
+	Attributs.ActiveEffects.Add(LingeringEffect);
 }
 
 void UASAttributsManager::RemoveLingeringEffect(UASLingeringEffect* LingeringEffect)
 {
-	if (Attributs->ActiveEffects.Contains(LingeringEffect))
+	if (Attributs.ActiveEffects.Contains(LingeringEffect))
 	{
-		Attributs->ActiveEffects.Remove(LingeringEffect);
+		Attributs.ActiveEffects.Remove(LingeringEffect);
 	}
 }
 
 void UASAttributsManager::EditStat(EStat InStat, float InValue)
 {
-	if (!Attributs->StatsContains(InStat))
+	if (!Attributs.StatsContains(InStat))
 		return;
 	
-	Attributs->Stats[InStat] += InValue;
+	Attributs.Stats[InStat] += InValue;
 	
 	if (InStat == EStat::Health)
 	{
-		if (Attributs->Stats[InStat] <= 0.0f)
+		if (Attributs.Stats[InStat] <= 0.0f)
 		{
 			UE_LOG(LogTemp, Error, TEXT("DEAD"));
 		}
-		Attributs->Stats[InStat] = FMath::Clamp(Attributs->Stats[InStat], 0.0f, Attributs->Stats[EStat::MaxHealth]);
+		Attributs.Stats[InStat] = FMath::Clamp(Attributs.Stats[InStat], 0.0f, Attributs.Stats[EStat::MaxHealth]);
 	}
 
 	if (InStat == EStat::Mana)
 	{
-		Attributs->Stats[InStat] = FMath::Clamp(Attributs->Stats[InStat], 0.0f, Attributs->Stats[EStat::MaxMana]);
+		Attributs.Stats[InStat] = FMath::Clamp(Attributs.Stats[InStat], 0.0f, Attributs.Stats[EStat::MaxMana]);
 	}
 	
 	UE_LOG(LogTemp, Warning, TEXT("EditStat"));
+}
+
+float UASAttributsManager::GetHealthPercent()
+{
+	if (!Attributs.StatsContains(EStat::MaxHealth))
+	{
+		return 0.0f;	
+	}
+	else
+	{
+		return Attributs.GetStat(EStat::Health) / Attributs.GetStat(EStat::MaxHealth);
+	}
+}
+
+float UASAttributsManager::GetManaPercent()
+{
+	if (!Attributs.StatsContains(EStat::MaxMana))
+	{
+		return 0.0f;	
+	}
+	else
+	{
+		return Attributs.GetStat(EStat::Mana) / Attributs.GetStat(EStat::MaxMana);
+	}
 }
 

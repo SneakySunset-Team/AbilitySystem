@@ -3,20 +3,37 @@
 #include "ASAttributs.h"
 #include "CharacterSystems/ASAttributsManager.h"
 
-void UASEffect::Initialize(UASAttributs* InCasterAttributs)
+void UASEffect::Initialize(UASAttributsManager* InCasterAttributsManager)
 {
-	CasterAttributs = InCasterAttributs;
+	CasterAttributsManager = InCasterAttributsManager;
 }
 
 void UASEffect::ApplyEffect(UASAttributsManager* InTargetAttributsManager)
 {
+	if (!CanApplyEffect(InTargetAttributsManager))
+	{
+		return;
+	}
+	
 	float TotalValue = 0;
 	for (const auto Stat : Stats)
 	{
-		UASAttributs* BaseAttributs = Stat.IsScalingOnCaster ? CasterAttributs.Get() : InTargetAttributsManager->GetAttributs();
-		float BaseValue = BaseAttributs->StatsContains(Stat.ScalingType) ? BaseAttributs->GetStat(Stat.ScalingType) : 0;
+		FASAttributs& BaseAttributs = Stat.IsScalingOnCaster ? CasterAttributsManager->Attributs : InTargetAttributsManager->Attributs;
+		float BaseValue = BaseAttributs.StatsContains(Stat.ScalingType) ? BaseAttributs.GetStat(Stat.ScalingType) : 0;
 		TotalValue += BaseValue * Stat.MultiplicativeValue + Stat.AdditiveValue;
 		
 	}
 	InTargetAttributsManager->EditStat(TargetType, TotalValue);
+}
+
+bool UASEffect::CanApplyEffect(UASAttributsManager* InTargetAttributsManager)
+{
+	for (const auto& Condition : Conditions)
+	{
+		if (!Condition.GetDefaultObject()->GetConditionValidation(InTargetAttributsManager))
+		{
+			return false;
+		}
+	}
+	return true;
 }

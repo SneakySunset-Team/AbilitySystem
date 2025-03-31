@@ -5,6 +5,11 @@
 #include "CharacterSystems/ASAttributsManager.h"
 #include "CharacterSystems/ASCharacter.h"
 
+UASAbilitySystem::UASAbilitySystem()
+{
+	PrimaryComponentTick.bCanEverTick = true;
+}
+
 void UASAbilitySystem::BeginPlay()
 {
 	Super::BeginPlay();
@@ -15,28 +20,52 @@ void UASAbilitySystem::BeginPlay()
 	{
 		AbilityOne = NewObject<UASAbility>(this, AbilityOnePrefab);
 		AbilityOne->InitializePersistant(OwningCharacter);
-		AbilityOne->SetCasterAttributs(OwningCharacter->GetAttributsManager()->GetAttributs());
+		AbilityOne->SetCasterAttributs(OwningCharacter->GetAttributsManager());
 	}
 
 	if (IsValid(AbilityTwoPrefab))
 	{
 		AbilityTwo = NewObject<UASAbility>(this, AbilityTwoPrefab);
 		AbilityTwo->InitializePersistant(OwningCharacter);
-		AbilityTwo->SetCasterAttributs(OwningCharacter->GetAttributsManager()->GetAttributs());
+		AbilityTwo->SetCasterAttributs(OwningCharacter->GetAttributsManager());
 	}
 
 	if (IsValid(AbilityThreePrefab))
 	{
 		AbilityThree = NewObject<UASAbility>(this, AbilityThreePrefab);
 		AbilityThree->InitializePersistant(OwningCharacter);
-		AbilityThree->SetCasterAttributs(OwningCharacter->GetAttributsManager()->GetAttributs());
+		AbilityThree->SetCasterAttributs(OwningCharacter->GetAttributsManager());
 	}
 
 	if (IsValid(UltimatePrefab))
 	{
 		Ultimate = NewObject<UASAbility>(this, UltimatePrefab);
 		Ultimate->InitializePersistant(OwningCharacter);
-		Ultimate->SetCasterAttributs(OwningCharacter->GetAttributsManager()->GetAttributs());
+		Ultimate->SetCasterAttributs(OwningCharacter->GetAttributsManager());
+	}
+}
+
+void UASAbilitySystem::TickComponent(float DeltaTime, enum ELevelTick TickType,
+	FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	UE_LOG(LogTemp, Log, TEXT("UASAbilitySystem::TickComponent"));
+	if (IsValid(AbilityOne))
+	{
+		UE_LOG(LogTemp, Log, TEXT("Ability one tick"));
+		AbilityOne->Tick(DeltaTime);
+	}
+	if (IsValid(AbilityTwo))
+	{
+		AbilityTwo->Tick(DeltaTime);
+	}
+	if (IsValid(AbilityThree))
+	{
+		AbilityThree->Tick(DeltaTime);
+	}
+	if (IsValid(Ultimate))
+	{
+		Ultimate->Tick(DeltaTime);
 	}
 }
 
@@ -65,4 +94,24 @@ void UASAbilitySystem::CastAbility(int AbilityIndex)
 	{
 		TargetAbility->StartCasting();
 	}
+}
+
+float UASAbilitySystem::GetAbilityOneCooldown()
+{
+	return IsValid(AbilityOne) ? AbilityOne->GetCurrentTimer() : 0;
+}
+
+float UASAbilitySystem::GetAbilityTwoCooldown()
+{
+	return IsValid(AbilityTwo) ? AbilityTwo->GetCurrentTimer() : 0;
+}
+
+float UASAbilitySystem::GetAbilityThreeCooldown()
+{
+	return IsValid(AbilityThree) ? AbilityThree->GetCurrentTimer() : 0;
+}
+
+float UASAbilitySystem::GetUltimateCooldown()
+{
+	return IsValid(Ultimate) ? Ultimate->GetCurrentTimer() : 0;
 }

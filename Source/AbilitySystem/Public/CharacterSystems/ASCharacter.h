@@ -51,6 +51,24 @@ protected:
 public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UFUNCTION(BlueprintCallable)
+	float GetHealthPercent();
+
+	UFUNCTION(BlueprintCallable)
+	float GetManaPercent();
+
+	UFUNCTION(BlueprintCallable)
+	int GetAbilityOneCurrentCooldown();
+
+	UFUNCTION(BlueprintCallable)
+	int GetAbilityTwoCurrentCooldown();
+
+	UFUNCTION(BlueprintCallable)
+	int GetAbilityThreeCurrentCooldown();
+
+	UFUNCTION(BlueprintCallable)
+	int GetUltimateCurrentCooldown();
+
 	UFUNCTION()
 	UASAttributsManager* GetAttributsManager()
 	{

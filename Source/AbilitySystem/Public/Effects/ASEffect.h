@@ -1,12 +1,15 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "ASEffectCondition_HasStatus.h"
 #include "UObject/Object.h"
 #include "ASEffect.generated.h"
 
 
+class UASAttributsManager;
 enum class EStat : uint8;
-class UASAttributs;
+struct FASAttributs;
+class UASEffectCondition;
 
 UENUM(BlueprintType)
 enum class EASActivationType : uint8
@@ -38,6 +41,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float MultiplicativeValue;
+
 };
 
 
@@ -56,14 +60,20 @@ class ABILITYSYSTEM_API UASEffect : public UObject
 	TArray<FASSingleStat> Stats;
 	
 	UPROPERTY()
-	TObjectPtr<UASAttributs> CasterAttributs;
+	TObjectPtr<UASAttributsManager> CasterAttributsManager;
 
+	UPROPERTY(EditAnywhere)
+	TArray<TSubclassOf<UASEffectCondition>> Conditions;
+	
 public:
 	UFUNCTION()
-	void Initialize(UASAttributs* InCasterAttributs);
+	void Initialize(UASAttributsManager* InCasterAttributsManager);
 
 	UFUNCTION()
 	virtual void ApplyEffect(UASAttributsManager* InTargetAttributsManager);
+
+	UFUNCTION()
+	bool CanApplyEffect(UASAttributsManager* InTargetAttributsManager);
 	
 	UFUNCTION()
 	EASActivationType GetActivationType() const

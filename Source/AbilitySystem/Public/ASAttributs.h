@@ -28,8 +28,8 @@ enum class EStatus : uint8
 class UASLingeringEffect;
 class UASEffect;
 
-UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced)
-class ABILITYSYSTEM_API UASAttributs : public UObject
+USTRUCT(BlueprintType)
+struct ABILITYSYSTEM_API FASAttributs
 {
 	GENERATED_BODY()
 	

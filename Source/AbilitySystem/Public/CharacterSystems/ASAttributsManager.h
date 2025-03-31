@@ -2,7 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "ASAttributs.h"
+#include "EditorCategoryUtils.h"
+#include "Animation/AnimAttributes.h"
 #include "Components/ActorComponent.h"
+#include "Effects/ASLingeringEffect.h"
 #include "ASAttributsManager.generated.h"
 
 class UASLingeringEffect;
@@ -16,7 +19,7 @@ enum class ETeam : uint8
 };
 
 
-class UASAttributs;
+struct FASAttributs;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class ABILITYSYSTEM_API UASAttributsManager : public UActorComponent
@@ -26,9 +29,10 @@ class ABILITYSYSTEM_API UASAttributsManager : public UActorComponent
 public:
 	UASAttributsManager();
 
+	UPROPERTY(EditAnywhere)
+	FASAttributs Attributs;
+	
 protected:
-	UPROPERTY(EditAnywhere, Instanced)
-	TObjectPtr<UASAttributs> Attributs;
 
 	UPROPERTY(EditAnywhere)
 	ETeam CurrentTeam;
@@ -42,21 +46,17 @@ public:
 
 	UFUNCTION()
 	void AddLingeringEffect(UASLingeringEffect* LingeringEffect);
+
+	UFUNCTION()
 	void RemoveLingeringEffect(UASLingeringEffect* LingeringEffect);
 
 	UFUNCTION()
 	void EditStat(EStat InStat, float InValue);
 
 	UFUNCTION()
-	UASAttributs* GetAttributs()
-	{
-		return Attributs;
-	}
-
-	UFUNCTION()
 	TMap<EStat, float> GetAttributsStats()
 	{
-		return Attributs->Stats;
+		return Attributs.Stats;
 	}
 	
 	UFUNCTION()
@@ -64,4 +64,23 @@ public:
 	{
 		return CurrentTeam;
 	}
+
+	UFUNCTION()
+	bool GetHasStatus(EStatus InTargetStatus)
+	{
+		for (const auto& Effect : Attributs.ActiveEffects)
+		{
+			if (Effect->GetStatus() == InTargetStatus)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	UFUNCTION()
+	float GetHealthPercent();
+
+	UFUNCTION()
+	float GetManaPercent();
 };

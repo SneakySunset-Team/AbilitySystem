@@ -13,6 +13,8 @@ class ABILITYSYSTEM_API UASAbilitySystem : public UActorComponent
 {
 	GENERATED_BODY()
 
+	UASAbilitySystem();
+	
 	UPROPERTY()
 	TObjectPtr<AASCharacter> OwningCharacter;
 
@@ -42,7 +44,21 @@ class ABILITYSYSTEM_API UASAbilitySystem : public UActorComponent
 
 	virtual void BeginPlay() override;
 
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	
 public:
 	UFUNCTION()
 	void CastAbility(int AbilityIndex);
+
+	UFUNCTION()
+	float GetAbilityOneCooldown();
+
+	UFUNCTION()
+	float GetAbilityTwoCooldown();
+
+	UFUNCTION()
+	float GetAbilityThreeCooldown();
+
+	UFUNCTION()
+	float GetUltimateCooldown();
 };
