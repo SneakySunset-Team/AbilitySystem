@@ -8,7 +8,7 @@
 
 class UASAttributsManager;
 
-DECLARE_DYNAMIC_DELEGATE_ThreeParams(FOnHitDelegate, AActor*, OtherActor, FVector, NormalImpulse, const FHitResult&, Hit);
+DECLARE_DYNAMIC_DELEGATE_FourParams(FOnHitDelegate, AActor*, OtherActor, FVector, NormalImpulse, const FHitResult&, Hit, AActor*, Projectile);
 DECLARE_DYNAMIC_DELEGATE(FOnMaxDistanceReached);
 
 UCLASS()
@@ -34,11 +34,13 @@ public:
 
 	FOnHitDelegate OnHitDelegate;
 	FOnMaxDistanceReached OnMaxDistanceReachedDelegate;
+
+	UFUNCTION()
+	virtual void Initialize(float InMaxDistance, float InSpeed);
 	
 protected:
 	virtual void BeginPlay() override;
 
-	virtual void Initialize(float InMaxDistance, float InSpeed);
 	
 public:
 	virtual void Tick(float DeltaTime) override;

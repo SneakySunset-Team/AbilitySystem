@@ -10,14 +10,13 @@ void UASEffect::Initialize(UASAttributs* InCasterAttributs)
 
 void UASEffect::ApplyEffect(UASAttributsManager* InTargetAttributsManager)
 {
-	TMap<EStat, float> AppliedAttributs;
-	for (const auto Stat : InTargetAttributsManager->GetAttributsStats())
+	float TotalValue = 0;
+	for (const auto Stat : Stats)
 	{
-		float AdditiveValue = AttributsAdditive->StatsContains(Stat.Key) ? AttributsAdditive->GetStat(Stat.Key) : 0;
-		float BaseValue = CasterAttributs->StatsContains(Stat.Key) ? CasterAttributs->GetStat(Stat.Key) : 0;
-		float MultiplicativeValue = AttributsMultiplicative->StatsContains(Stat.Key) ? AttributsMultiplicative->GetStat(Stat.Key) : 0;
-
-		float AppliedDamage = (BaseValue + AdditiveValue) * MultiplicativeValue;
-		InTargetAttributsManager->EditStat(Stat.Key,AppliedDamage);
+		UASAttributs* BaseAttributs = Stat.IsScalingOnCaster ? CasterAttributs.Get() : InTargetAttributsManager->GetAttributs();
+		float BaseValue = BaseAttributs->StatsContains(Stat.ScalingType) ? BaseAttributs->GetStat(Stat.ScalingType) : 0;
+		TotalValue += BaseValue * Stat.MultiplicativeValue + Stat.AdditiveValue;
+		
 	}
+	InTargetAttributsManager->EditStat(TargetType, TotalValue);
 }

@@ -3,36 +3,37 @@
 #include "CharacterSystems/ASAttributsManager.h"
 #include "CharacterSystems/ASCharacter.h"
 #include "Effects/ASEffect.h"
+#include "Kismet/GameplayStatics.h"
 
 void UASAbilityProjectile::InitializeDuplicate(AASCharacter* InOwner)
 {
 	Super::InitializeDuplicate(InOwner);
-	
+
 	for (const auto EffectPrefab : EffectsPrefabs)
 	{
-		FOnAbilityTrigger& EffectDelegate = OnCastAnimationStart; 
+		bool IsCastFromDuplicate = true;
 		
-		bool IsCastFromPersistant = true;
-		switch (Effects.Last()->GetTriggerType())
+		UASEffect* Effect = NewObject<UASEffect>(this, EffectPrefab);
+		Effect->Initialize(OwningCharacter->GetAttributsManager()->GetAttributs());
+		switch (Effect->GetActivationType())
 		{
-		case ETriggerType::OnHit:
+		case EASActivationType::OnHit:
+			OnProjectileHit.AddDynamic(Effect, &UASEffect::ApplyEffect);
 			break;
-		case ETriggerType::OnHitTarget:
-			EffectDelegate = OnCastAnimationTrigger;
+		case EASActivationType::OnHitTarget:
+			OnProjectileHitAttributsManager.AddDynamic(Effect, &UASEffect::ApplyEffect);
 			break;
-		case ETriggerType::OnProjectileReachMaxDistance:
-			EffectDelegate = OnCastAnimationEnd;
+		case EASActivationType::OnProjectileReachMaxDistance:
+			OnProjectileReachMaxDistance.AddDynamic(Effect, &UASEffect::ApplyEffect);
 			break;
 		default:
-			IsCastFromPersistant = false;
+			IsCastFromDuplicate = false;
 			break;
 		}
 
-		if (IsCastFromPersistant)
+		if (IsCastFromDuplicate)
 		{
-			Effects.Add(NewObject<UASEffect>(this, EffectPrefab));
-			Effects.Last()->Initialize(OwningCharacter->GetAttributsManager()->GetAttributs());
-			EffectDelegate.AddDynamic(Effects.Last(), UASEffect::ApplyEffect);
+			Effects.Add(Effect);
 		}
 	}
 }
@@ -41,29 +42,34 @@ void UASAbilityProjectile::OnTriggerAnimationEventCallback(FName NotifyName, con
 {
 	Super::OnTriggerAnimationEventCallback(NotifyName, Payload);
 
-	//TODO: Set LOCATION and ROTATION of new Projectile on spawn
-	FVector SpawnLocation;
-	FRotator SpawnRotation;
+	FVector SpawnLocation = OwningCharacter->GetMesh()->GetSocketLocation(BoneName);
+	FRotator SpawnRotation = OwningCharacter->GetActorForwardVector().Rotation();
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	AASProjectile* Projectile = GetWorld()->SpawnActor<AASProjectile>(ProjectilePrefab, SpawnLocation, SpawnRotation, SpawnParameters);
-
+	Projectile->Initialize(ProjectileSpeed, ProjectileSpeed);
 	UASAbilityProjectile* VolatileAbility = Cast<UASAbilityProjectile>(CreateAbilityInstance(Projectile));
 	Projectile->OnHitDelegate.BindDynamic(VolatileAbility, &UASAbilityProjectile::OnHitTargetCallback);
 	Projectile->OnMaxDistanceReachedDelegate.BindDynamic(VolatileAbility, &UASAbilityProjectile::OnProjectileMaxDistanceReachedCallback);
 }
 
-void UASAbilityProjectile::OnHitTargetCallback(AActor* HitActor, FVector NormalImpulse, const FHitResult& HitResult)
+void UASAbilityProjectile::OnHitTargetCallback(AActor* HitActor, FVector NormalImpulse, const FHitResult& HitResult, AActor* Projectile)
 {
-	OnAbilityHit.Broadcast(OwningCharacter->GetAttributsManager());
+	OnProjectileHit.Broadcast(OwningCharacter->GetAttributsManager());
 	if (HitActor->FindComponentByClass<UASAttributsManager>())
 	{
-		UASAttributsManager* AttributesManager = HitActor->GetComponentByClass<UASAttributsManager>();
-		OnAbilityHitAttributsManager.Broadcast(AttributesManager);
+		UE_LOG(LogTemp, Warning, TEXT("OnHitTargetCallback, With name : %s"), *HitActor->GetName());
+		if (OnHitParticle != nullptr)
+		{
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), OnHitParticle, HitResult.Location, NormalImpulse.Rotation(), true);
+		}
+		UASAttributsManager* AttributsManager = HitActor->GetComponentByClass<UASAttributsManager>();
+		OnProjectileHitAttributsManager.Broadcast(AttributsManager);
+		Projectile->Destroy();
 	}
 }
 
 void UASAbilityProjectile::OnProjectileMaxDistanceReachedCallback()
 {
-	OnAbilityReachMaxDistance.Broadcast(OwningCharacter->GetAttributsManager());
+	OnProjectileReachMaxDistance.Broadcast(OwningCharacter->GetAttributsManager());
 }

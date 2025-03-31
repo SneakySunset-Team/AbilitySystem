@@ -27,8 +27,11 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "AS|Stats")
 	float Cooldown;
-	
+
 	UPROPERTY(EditAnywhere, Category = "AS|Stats")
+	FName BoneName;
+	
+	UPROPERTY()
 	bool IsInCooldown;
 
 	// List of Effects that will be applied by the ability on Hit.
@@ -39,6 +42,9 @@ protected:
 	// Going further would be implementing the TMap in the Ability System for the abilities.
 	UPROPERTY(EditAnywhere, Category = "AS|Stats")
 	TArray<TSubclassOf<UASEffect>> EffectsPrefabs;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UASEffect>> Effects;
 	
 	UPROPERTY()
 	TObjectPtr<UASAttributs> CasterAttributs;
@@ -66,7 +72,9 @@ public:
 
 	UFUNCTION()
 	virtual void OnAnimationStartCallback(UAnimMontage* Montage);
-	
+
+	// When Animation reachs Notify with name "Cast" Trigger ability
+	// I identify the notify by name but it would probably be better to create a custom Notify class.
 	UFUNCTION()
 	virtual void OnTriggerAnimationEventCallback(FName NotifyName, const FBranchingPointNotifyPayload& Payload);
 
@@ -75,7 +83,6 @@ public:
 	
 	UFUNCTION()
 	bool CanCast();
-
 	
 protected:
 	UFUNCTION()
@@ -84,8 +91,9 @@ protected:
 	UFUNCTION()
 	UASAbility* CreateAbilityInstance(AActor* NewOwner);
 	
+public:
 	//************ GETTERS ***************************************
-	
+
 	UFUNCTION()
 	void SetCasterAttributs(UASAttributs* InCasterAttributs)
 	{

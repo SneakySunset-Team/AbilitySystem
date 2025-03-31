@@ -11,7 +11,8 @@
 #include "Materials/Material.h"
 #include "Engine/World.h"
 
-AAbilitySystemCharacter::AAbilitySystemCharacter()
+AAbilitySystemCharacter::AAbilitySystemCharacter(const FObjectInitializer& ObjectInitializer) :
+Super(ObjectInitializer)
 {
 	// Set size for player capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);

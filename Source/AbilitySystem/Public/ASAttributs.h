@@ -4,12 +4,14 @@
 #include "UObject/Object.h"
 #include "ASAttributs.generated.h"
 
+
 UENUM(BlueprintType)
 enum class EStat : uint8
 {
+	MaxHealth,
 	Health,
 	Damage,
-	Speed,
+	MaxMana,
 	Mana
 };
 
@@ -17,24 +19,25 @@ UENUM(BlueprintType)
 enum class EStatus : uint8
 {
 	Stunned,
-	Burning
+	Burning,
+	None
 };
 
+
+
+class UASLingeringEffect;
 class UASEffect;
 
-UCLASS()
+UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced)
 class ABILITYSYSTEM_API UASAttributs : public UObject
 {
 	GENERATED_BODY()
 	
 	UPROPERTY(EditAnywhere)
 	TMap<EStat, float> Stats;
-
+	
 	UPROPERTY(EditAnywhere)
-	TArray<TObjectPtr<UASEffect>> ActiveEffects;
-
-	UPROPERTY(EditAnywhere)
-	TSet<EStatus> ActiveStatuses;
+	TArray<TObjectPtr<UASLingeringEffect>> ActiveEffects;
 
 	friend class UASAttributsManager;
 
@@ -46,6 +49,10 @@ public:
 
 	float GetStat(EStat Stat)
 	{
-		return Stats[Stat];
+		if (Stats.Contains(Stat))
+		{
+			return Stats[Stat];
+		}
+		return 0.f;
 	}
 };

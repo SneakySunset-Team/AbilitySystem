@@ -5,10 +5,11 @@
 #include "ASEffect.generated.h"
 
 
+enum class EStat : uint8;
 class UASAttributs;
 
 UENUM(BlueprintType)
-enum class ETriggerType : uint8
+enum class EASActivationType : uint8
 {
 	OnStartCasting,
 	OnAnimationTriggerEvent,
@@ -19,21 +20,42 @@ enum class ETriggerType : uint8
 	OnProjectileReachMaxDistance
 };
 
+USTRUCT(BlueprintType)
+struct FASSingleStat
+{
+	GENERATED_BODY()
+
+public:
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EStat ScalingType;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool IsScalingOnCaster;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float AdditiveValue;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float MultiplicativeValue;
+};
+
+
 UCLASS(BlueprintType, Blueprintable)
 class ABILITYSYSTEM_API UASEffect : public UObject
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere)
-	ETriggerType TriggerType;
+	EStat TargetType;
 	
 	UPROPERTY(EditAnywhere)
-	TObjectPtr<UASAttributs> AttributsAdditive;
+	EASActivationType ActivationType;
 
 	UPROPERTY(EditAnywhere)
-	TObjectPtr<UASAttributs> AttributsMultiplicative;
-
-	UPROPERTY(EditAnywhere)
+	TArray<FASSingleStat> Stats;
+	
+	UPROPERTY()
 	TObjectPtr<UASAttributs> CasterAttributs;
 
 public:
@@ -41,11 +63,11 @@ public:
 	void Initialize(UASAttributs* InCasterAttributs);
 
 	UFUNCTION()
-	void ApplyEffect(UASAttributsManager* InTargetAttributsManager);
+	virtual void ApplyEffect(UASAttributsManager* InTargetAttributsManager);
 	
 	UFUNCTION()
-	ETriggerType GetTriggerType()
+	EASActivationType GetActivationType() const
 	{
-		return TriggerType;
+		return ActivationType;
 	}
 };

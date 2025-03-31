@@ -17,7 +17,7 @@ class ABILITYSYSTEM_API AASCharacter : public AAbilitySystemCharacter
 	GENERATED_BODY()
 
 public:
-	AASCharacter();
+	AASCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 protected:
 	UPROPERTY(EditAnywhere, Category="", meta=(AllowPrivateAccess))

@@ -12,7 +12,7 @@ class AAbilitySystemCharacter : public ACharacter
 	GENERATED_BODY()
 
 public:
-	AAbilitySystemCharacter();
+	AAbilitySystemCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	// Called every frame.
 	virtual void Tick(float DeltaSeconds) override;

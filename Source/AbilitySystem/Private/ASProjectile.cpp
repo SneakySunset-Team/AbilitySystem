@@ -10,12 +10,13 @@ AASProjectile::AASProjectile()
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	MeshComponent->SetSimulatePhysics(true);
 	MeshComponent->SetNotifyRigidBodyCollision(true);
+	RootComponent = MeshComponent;
+
 }
 
 void AASProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-	
 	MeshComponent->OnComponentHit.AddDynamic(this, &AASProjectile::OnHit);
 }
 
@@ -41,6 +42,6 @@ void AASProjectile::Tick(float DeltaTime)
 
 void AASProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	OnHitDelegate.ExecuteIfBound(OtherActor, NormalImpulse, Hit);
+	OnHitDelegate.ExecuteIfBound(OtherActor, NormalImpulse, Hit, this);
 }
 

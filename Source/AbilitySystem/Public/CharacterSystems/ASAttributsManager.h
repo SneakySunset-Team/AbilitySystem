@@ -5,6 +5,8 @@
 #include "Components/ActorComponent.h"
 #include "ASAttributsManager.generated.h"
 
+class UASLingeringEffect;
+
 UENUM()
 enum class ETeam : uint8
 {
@@ -25,7 +27,7 @@ public:
 	UASAttributsManager();
 
 protected:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Instanced)
 	TObjectPtr<UASAttributs> Attributs;
 
 	UPROPERTY(EditAnywhere)
@@ -37,6 +39,10 @@ protected:
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	                           FActorComponentTickFunction* ThisTickFunction) override;
+
+	UFUNCTION()
+	void AddLingeringEffect(UASLingeringEffect* LingeringEffect);
+	void RemoveLingeringEffect(UASLingeringEffect* LingeringEffect);
 
 	UFUNCTION()
 	void EditStat(EStat InStat, float InValue);

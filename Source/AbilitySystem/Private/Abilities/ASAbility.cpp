@@ -4,6 +4,7 @@
 #include "CharacterSystems/ASCharacter.h"
 #include "Effects/ASEffect.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 void UASAbility::InitializePersistant(AASCharacter* InOwner)
@@ -13,16 +14,18 @@ void UASAbility::InitializePersistant(AASCharacter* InOwner)
 	for (const auto EffectPrefab : EffectsPrefabs)
 	{
 		FOnAbilityTrigger& EffectDelegate = OnCastAnimationStart; 
+
+		const UASEffect* DefaultEffect = EffectPrefab->GetDefaultObject<UASEffect>();
 		
 		bool IsCastFromPersistant = true;
-		switch (Effects.Last()->GetTriggerType())
+		switch (DefaultEffect->GetActivationType())
 		{
-			case ETriggerType::OnStartCasting:
+			case EASActivationType::OnStartCasting:
 				break;
-			case ETriggerType::OnAnimationTriggerEvent:
+			case EASActivationType::OnAnimationTriggerEvent:
 				EffectDelegate = OnCastAnimationTrigger;
 				break;
-			case ETriggerType::OnEndAnimation:
+			case EASActivationType::OnEndAnimation:
 				EffectDelegate = OnCastAnimationEnd;
 				break;
 			default:
@@ -32,11 +35,17 @@ void UASAbility::InitializePersistant(AASCharacter* InOwner)
 
 		if (IsCastFromPersistant)
 		{
-			UASEffect* Effect = NewObject<UASEffect>(InOwner, EffectPrefab));
+			UASEffect* Effect = NewObject<UASEffect>(InOwner, EffectPrefab);
 			Effect->Initialize(OwningCharacter->GetAttributsManager()->GetAttributs());
-			EffectDelegate.AddDynamic(Effect, UASEffect::ApplyEffect);
+			EffectDelegate.AddDynamic(Effect, &UASEffect::ApplyEffect);
 		}
 	}
+
+	UAnimInstance* OwningCharacter_AnimInstance = OwningCharacter->GetMesh()->GetAnimInstance();
+
+	OwningCharacter_AnimInstance->OnMontageStarted.AddDynamic(this, &UASAbility::OnAnimationStartCallback);
+	OwningCharacter_AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &UASAbility::OnTriggerAnimationEventCallback);
+	OwningCharacter_AnimInstance->OnMontageEnded.AddDynamic(this, &UASAbility::OnAnimationEndCallback);
 }
 
 void UASAbility::InitializeDuplicate(AASCharacter* InOwner)
@@ -53,29 +62,48 @@ void UASAbility::StartCasting()
 	UGameplayStatics::PlaySoundAtLocation(this, OnStartCasting_Sound, OwningCharacter->GetActorLocation());	
 
 	UAnimInstance* OwningCharacter_AnimInstance = OwningCharacter->GetMesh()->GetAnimInstance();
-
-	OwningCharacter_AnimInstance->OnMontageStarted.AddDynamic(this, &UASAbility::OnAnimationStartCallback);
-	OwningCharacter_AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &UASAbility::OnTriggerAnimationEventCallback);
-	OwningCharacter_AnimInstance->OnMontageEnded.AddDynamic(this, &UASAbility::OnAnimationEndCallback);
 	OwningCharacter_AnimInstance->Montage_Play(OnStartCasting_AnimMontage);
 }
 
 void UASAbility::OnAnimationStartCallback(UAnimMontage* Montage)
 {
-	OnCastAnimationStart.Broadcast(OwningCharacter->GetAttributsManager());
-	IsInCooldown = true;
+	if (Montage == OnStartCasting_AnimMontage)
+	{
+		OnCastAnimationStart.Broadcast(OwningCharacter->GetAttributsManager());
+		IsInCooldown = true;
+		OwningCharacter->GetCharacterMovement()->Deactivate();
+	}
 }
 
 void UASAbility::OnTriggerAnimationEventCallback(FName NotifyName, const FBranchingPointNotifyPayload& Payload)
 {
-	OnCastAnimationTrigger.Broadcast(OwningCharacter->GetAttributsManager());
+	UAnimInstance* AnimInstance = OwningCharacter->GetMesh()->GetAnimInstance();
+	if (!AnimInstance)
+		return;
+
+	// Get the active montage instance
+	FAnimMontageInstance* ActiveMontageInstance = AnimInstance->GetActiveMontageInstance();
+    
+	// Check if it's our montage
+	if (ActiveMontageInstance && ActiveMontageInstance->Montage == OnStartCasting_AnimMontage)
+	{
+		if (NotifyName == "Cast")
+		{
+			UE_LOG(LogTemp, Display, TEXT("Cast triggered"));
+			OnCastAnimationTrigger.Broadcast(OwningCharacter->GetAttributsManager());
+		}
+	}
 }
 
 void UASAbility::OnAnimationEndCallback(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (!bInterrupted && Montage == OnStartCasting_AnimMontage)
+	if (Montage == OnStartCasting_AnimMontage)
 	{
-		OnCastAnimationEnd.Broadcast(OwningCharacter->GetAttributsManager());
+		if (!bInterrupted && Montage == OnStartCasting_AnimMontage)
+		{
+			OnCastAnimationEnd.Broadcast(OwningCharacter->GetAttributsManager());
+			OwningCharacter->GetCharacterMovement()->Activate();
+		}
 	}
 }
 

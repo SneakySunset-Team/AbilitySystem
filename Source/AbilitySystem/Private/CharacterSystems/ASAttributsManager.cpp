@@ -1,6 +1,4 @@
 ﻿#include "AbilitySystem/Public/CharacterSystems/ASAttributsManager.h"
-#include "NiagaraCommon.h"
-#include "Animation/AnimNode_Inertialization.h"
 
 UASAttributsManager::UASAttributsManager()
 {
@@ -11,6 +9,19 @@ UASAttributsManager::UASAttributsManager()
 void UASAttributsManager::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (Attributs->StatsContains(EStat::MaxHealth))
+	{
+		Attributs->Stats.FindOrAdd(EStat::Health);
+		Attributs->Stats[EStat::Health] = Attributs->Stats[EStat::MaxHealth];
+	}
+
+	if (Attributs->StatsContains(EStat::MaxMana))
+	{
+		Attributs->Stats.FindOrAdd(EStat::Mana);
+		Attributs->Stats[EStat::Mana] = Attributs->Stats[EStat::MaxMana];
+	}
+	
 }
 
 void UASAttributsManager::TickComponent(float DeltaTime, ELevelTick TickType,
@@ -19,8 +30,40 @@ void UASAttributsManager::TickComponent(float DeltaTime, ELevelTick TickType,
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
+void UASAttributsManager::AddLingeringEffect(UASLingeringEffect* LingeringEffect)
+{
+	Attributs->ActiveEffects.Add(LingeringEffect);
+}
+
+void UASAttributsManager::RemoveLingeringEffect(UASLingeringEffect* LingeringEffect)
+{
+	if (Attributs->ActiveEffects.Contains(LingeringEffect))
+	{
+		Attributs->ActiveEffects.Remove(LingeringEffect);
+	}
+}
+
 void UASAttributsManager::EditStat(EStat InStat, float InValue)
 {
-	Attributs->Stats[InStat] -= InValue;
+	if (!Attributs->StatsContains(InStat))
+		return;
+	
+	Attributs->Stats[InStat] += InValue;
+	
+	if (InStat == EStat::Health)
+	{
+		if (Attributs->Stats[InStat] <= 0.0f)
+		{
+			UE_LOG(LogTemp, Error, TEXT("DEAD"));
+		}
+		Attributs->Stats[InStat] = FMath::Clamp(Attributs->Stats[InStat], 0.0f, Attributs->Stats[EStat::MaxHealth]);
+	}
+
+	if (InStat == EStat::Mana)
+	{
+		Attributs->Stats[InStat] = FMath::Clamp(Attributs->Stats[InStat], 0.0f, Attributs->Stats[EStat::MaxMana]);
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("EditStat"));
 }
 

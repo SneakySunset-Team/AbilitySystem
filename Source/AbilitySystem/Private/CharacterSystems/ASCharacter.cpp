@@ -6,10 +6,12 @@
 #include "CharacterSystems/ASAttributsManager.h"
 #include "UObject/UnrealTypePrivate.h"
 
-AASCharacter::AASCharacter()
+
+
+AASCharacter::AASCharacter(const FObjectInitializer& ObjectInitializer) :
+Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
-	RootComponent = CreateDefaultSubobject<USceneComponent>("Root");
 	AttributsManagerComponent = CreateDefaultSubobject<UASAttributsManager>("Attributs Manager");
 	AbilitySystemComponent = CreateDefaultSubobject<UASAbilitySystem>("Ability System Component");
 }

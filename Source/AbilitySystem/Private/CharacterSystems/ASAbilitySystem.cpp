@@ -1,10 +1,8 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-
-#include "CharacterSystems/ASAbilitySystem.h"
+﻿#include "CharacterSystems/ASAbilitySystem.h"
 
 #include "NiagaraTypes.h"
 #include "Abilities/ASAbility.h"
+#include "CharacterSystems/ASAttributsManager.h"
 #include "CharacterSystems/ASCharacter.h"
 
 void UASAbilitySystem::BeginPlay()
@@ -13,17 +11,33 @@ void UASAbilitySystem::BeginPlay()
 
 	OwningCharacter = Cast<AASCharacter>(GetOwner());
 
-	AbilityOne = NewObject<UASAbility>(AbilityOnePrefab);
-	AbilityOne->InitializePersistant(OwningCharacter, true);
-	
-	AbilityTwo = NewObject<UASAbility>(AbilityTwoPrefab);
-	AbilityTwo->InitializePersistant(OwningCharacter, true);
-	
-	AbilityThree = NewObject<UASAbility>(AbilityThreePrefab);
-	AbilityThree->InitializePersistant(OwningCharacter, true);
-	
-	Ultimate = NewObject<UASAbility>(UltimatePrefab);
-	Ultimate->InitializePersistant(OwningCharacter, true);
+	if (IsValid(AbilityOnePrefab))
+	{
+		AbilityOne = NewObject<UASAbility>(this, AbilityOnePrefab);
+		AbilityOne->InitializePersistant(OwningCharacter);
+		AbilityOne->SetCasterAttributs(OwningCharacter->GetAttributsManager()->GetAttributs());
+	}
+
+	if (IsValid(AbilityTwoPrefab))
+	{
+		AbilityTwo = NewObject<UASAbility>(this, AbilityTwoPrefab);
+		AbilityTwo->InitializePersistant(OwningCharacter);
+		AbilityTwo->SetCasterAttributs(OwningCharacter->GetAttributsManager()->GetAttributs());
+	}
+
+	if (IsValid(AbilityThreePrefab))
+	{
+		AbilityThree = NewObject<UASAbility>(this, AbilityThreePrefab);
+		AbilityThree->InitializePersistant(OwningCharacter);
+		AbilityThree->SetCasterAttributs(OwningCharacter->GetAttributsManager()->GetAttributs());
+	}
+
+	if (IsValid(UltimatePrefab))
+	{
+		Ultimate = NewObject<UASAbility>(this, UltimatePrefab);
+		Ultimate->InitializePersistant(OwningCharacter);
+		Ultimate->SetCasterAttributs(OwningCharacter->GetAttributsManager()->GetAttributs());
+	}
 }
 
 void UASAbilitySystem::CastAbility(int AbilityIndex)
@@ -47,7 +61,7 @@ void UASAbilitySystem::CastAbility(int AbilityIndex)
 			checkNoEntry();
 	}
 
-	if (TargetAbility->CanCast())
+	if (IsValid(TargetAbility) && TargetAbility->CanCast())
 	{
 		TargetAbility->StartCasting();
 	}
