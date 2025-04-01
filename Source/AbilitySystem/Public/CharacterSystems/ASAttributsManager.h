@@ -18,6 +18,8 @@ enum class ETeam : uint8
 	Neutral
 };
 
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnStatusAdded, EStatus, NewStatus);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnStatusRemoved, EStatus, OldStatus);
 
 struct FASAttributs;
 
@@ -29,6 +31,9 @@ class ABILITYSYSTEM_API UASAttributsManager : public UActorComponent
 public:
 	UASAttributsManager();
 
+	FOnStatusAdded OnStatusAdded;
+	FOnStatusRemoved OnStatusRemoved;
+	
 	UPROPERTY(EditAnywhere)
 	FASAttributs Attributs;
 	

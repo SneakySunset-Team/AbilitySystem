@@ -55,4 +55,5 @@ public:
 		}
 		return 0.f;
 	}
+
 };

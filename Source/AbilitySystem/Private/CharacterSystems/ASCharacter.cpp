@@ -21,12 +21,16 @@ void AASCharacter::BeginPlay()
 	Super::BeginPlay();
 	
 	APlayerController* PC = Cast<APlayerController>(GetController());
+	AttributsManagerComponent->OnStatusAdded.BindDynamic(this, &AASCharacter::BIE_OnAddStatus);
+	AttributsManagerComponent->OnStatusRemoved.BindDynamic(this, &AASCharacter::BIE_OnRemoveStatus);
+	
 	if (!IsValid(PC)) return;
 	ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 	{
 		Subsystem->AddMappingContext(IMC_Default, 0);
 	}
+
 }
 
 void AASCharacter::OnTriggerAbilityOne()
@@ -48,7 +52,6 @@ void AASCharacter::OnTriggerUltimate()
 {
 	AbilitySystemComponent->CastAbility(4);
 }
-
 
 void AASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {

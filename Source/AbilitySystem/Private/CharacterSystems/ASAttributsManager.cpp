@@ -5,7 +5,6 @@ UASAttributsManager::UASAttributsManager()
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
-
 void UASAttributsManager::BeginPlay()
 {
 	Super::BeginPlay();
@@ -32,6 +31,10 @@ void UASAttributsManager::TickComponent(float DeltaTime, ELevelTick TickType,
 
 void UASAttributsManager::AddLingeringEffect(UASLingeringEffect* LingeringEffect)
 {
+	if (LingeringEffect->GetStatus() != EStatus::None &&  !GetHasStatus(LingeringEffect->GetStatus()))
+	{
+		OnStatusAdded.ExecuteIfBound(LingeringEffect->GetStatus());
+	}
 	Attributs.ActiveEffects.Add(LingeringEffect);
 }
 
@@ -39,6 +42,7 @@ void UASAttributsManager::RemoveLingeringEffect(UASLingeringEffect* LingeringEff
 {
 	if (Attributs.ActiveEffects.Contains(LingeringEffect))
 	{
+		OnStatusRemoved.ExecuteIfBound(LingeringEffect->GetStatus());
 		Attributs.ActiveEffects.Remove(LingeringEffect);
 	}
 }
