@@ -18,8 +18,8 @@ enum class ETeam : uint8
 	Neutral
 };
 
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnStatusAdded, EStatus, NewStatus);
-DECLARE_DYNAMIC_DELEGATE_OneParam(FOnStatusRemoved, EStatus, OldStatus);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStatusAdded, EStatus, NewStatus);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStatusRemoved, EStatus, OldStatus);
 
 struct FASAttributs;
 
@@ -36,6 +36,9 @@ public:
 	
 	UPROPERTY(EditAnywhere)
 	FASAttributs Attributs;
+
+	UPROPERTY(EditAnywhere)
+	TArray<TSubclassOf<UASLingeringEffect>> PassiveEffects;
 	
 protected:
 

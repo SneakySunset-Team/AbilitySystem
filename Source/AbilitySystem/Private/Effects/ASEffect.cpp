@@ -10,6 +10,7 @@ void UASEffect::Initialize(UASAttributsManager* InCasterAttributsManager)
 
 void UASEffect::ApplyEffect(UASAttributsManager* InTargetAttributsManager)
 {
+	
 	if (!CanApplyEffect(InTargetAttributsManager))
 	{
 		return;

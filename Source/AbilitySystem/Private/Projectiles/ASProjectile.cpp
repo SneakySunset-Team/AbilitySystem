@@ -1,4 +1,4 @@
-﻿#include "ASProjectile.h"
+﻿#include "Projectiles/ASProjectile.h"
 
 #include "CharacterSystems/ASAttributsManager.h"
 
@@ -34,7 +34,6 @@ void AASProjectile::Tick(float DeltaTime)
 	DistanceCrossed += Speed * DeltaTime;
 	
 	FVector NewLocation = GetActorLocation() + (GetActorForwardVector() * Speed * DeltaTime);
-	UE_LOG(LogTemp, Warning, TEXT("%f"), DistanceCrossed);
 	if (DistanceCrossed > MaxDistance)
 	{
 		Destroy();

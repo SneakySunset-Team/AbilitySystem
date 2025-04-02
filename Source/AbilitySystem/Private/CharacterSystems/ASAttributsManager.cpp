@@ -20,6 +20,13 @@ void UASAttributsManager::BeginPlay()
 		Attributs.Stats.FindOrAdd(EStat::Mana);
 		Attributs.Stats[EStat::Mana] = Attributs.Stats[EStat::MaxMana];
 	}
+
+	for (const auto& EffectPrefab : PassiveEffects)
+	{
+		UASLingeringEffect* Effect = NewObject<UASLingeringEffect>(this, EffectPrefab);
+		Attributs.ActiveEffects.Add(Effect);
+		Effect->ApplyEffect(this);
+	}
 	
 }
 
@@ -33,7 +40,7 @@ void UASAttributsManager::AddLingeringEffect(UASLingeringEffect* LingeringEffect
 {
 	if (LingeringEffect->GetStatus() != EStatus::None &&  !GetHasStatus(LingeringEffect->GetStatus()))
 	{
-		OnStatusAdded.ExecuteIfBound(LingeringEffect->GetStatus());
+		OnStatusAdded.Broadcast(LingeringEffect->GetStatus());
 	}
 	Attributs.ActiveEffects.Add(LingeringEffect);
 }
@@ -42,7 +49,7 @@ void UASAttributsManager::RemoveLingeringEffect(UASLingeringEffect* LingeringEff
 {
 	if (Attributs.ActiveEffects.Contains(LingeringEffect))
 	{
-		OnStatusRemoved.ExecuteIfBound(LingeringEffect->GetStatus());
+		OnStatusRemoved.Broadcast(LingeringEffect->GetStatus());
 		Attributs.ActiveEffects.Remove(LingeringEffect);
 	}
 }
@@ -58,7 +65,8 @@ void UASAttributsManager::EditStat(EStat InStat, float InValue)
 	{
 		if (Attributs.Stats[InStat] <= 0.0f)
 		{
-			UE_LOG(LogTemp, Error, TEXT("DEAD"));
+			GetOwner()->Destroy();
+			return;
 		}
 		Attributs.Stats[InStat] = FMath::Clamp(Attributs.Stats[InStat], 0.0f, Attributs.Stats[EStat::MaxHealth]);
 	}
@@ -67,8 +75,6 @@ void UASAttributsManager::EditStat(EStat InStat, float InValue)
 	{
 		Attributs.Stats[InStat] = FMath::Clamp(Attributs.Stats[InStat], 0.0f, Attributs.Stats[EStat::MaxMana]);
 	}
-	
-	UE_LOG(LogTemp, Warning, TEXT("EditStat"));
 }
 
 float UASAttributsManager::GetHealthPercent()

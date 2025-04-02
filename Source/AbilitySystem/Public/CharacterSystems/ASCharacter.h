@@ -69,11 +69,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 	int GetUltimateCurrentCooldown();
 
+	UFUNCTION()
+	void OnAddStatus(EStatus NewStatus);
+
+	UFUNCTION()
+	void OnRemoveStatus(EStatus OldStatus);
+	
 	UFUNCTION(BlueprintImplementableEvent)
 	void BIE_OnAddStatus(EStatus NewStatus);
 
 	UFUNCTION(BlueprintImplementableEvent)
-	void BIE_OnRemoveStatus(EStatus NewStatus);
+	void BIE_OnRemoveStatus(EStatus OldStatus);
 	
 	UFUNCTION()
 	UASAttributsManager* GetAttributsManager()

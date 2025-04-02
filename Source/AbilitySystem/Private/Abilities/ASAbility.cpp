@@ -1,8 +1,10 @@
 ﻿#include "Abilities/ASAbility.h"
 #include "ASAttributs.h"
+#include "SQCapture.h"
 #include "AbilitySystem/Public/CharacterSystems/ASAttributsManager.h"
 #include "CharacterSystems/ASCharacter.h"
 #include "Effects/ASEffect.h"
+#include "Engine/OverlapResult.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -10,64 +12,63 @@
 void UASAbility::InitializePersistant(AASCharacter* InOwner)
 {
 	OwningCharacter = InOwner;
-	
+
 	for (const auto EffectPrefab : EffectsPrefabs)
 	{
-		FOnAbilityTrigger& EffectDelegate = OnCastAnimationStart; 
-
-		const UASEffect* DefaultEffect = EffectPrefab->GetDefaultObject<UASEffect>();
-		
 		bool IsCastFromPersistant = true;
-		switch (DefaultEffect->GetActivationType())
+		
+		UASEffect* Effect = NewObject<UASEffect>(this, EffectPrefab);
+		Effect->Initialize(OwningCharacter->GetAttributsManager());
+		switch (Effect->GetActivationType())
 		{
-			case EASActivationType::OnStartCasting:
-				break;
-			case EASActivationType::OnAnimationTriggerEvent:
-				EffectDelegate = OnCastAnimationTrigger;
-				break;
-			case EASActivationType::OnEndAnimation:
-				EffectDelegate = OnCastAnimationEnd;
-				break;
-			default:
-				IsCastFromPersistant = false;
-				break;
+		case EASActivationType::OnStartCasting:
+			OnCastAnimationStart.AddDynamic(Effect, &UASEffect::ApplyEffect);
+			break;
+		case EASActivationType::OnAnimationTriggerEvent:
+			OnCastAnimationTrigger.AddDynamic(Effect, &UASEffect::ApplyEffect);
+			break;
+		case EASActivationType::OnEndAnimation:
+			OnCastAnimationEnd.AddDynamic(Effect, &UASEffect::ApplyEffect);
+			break;
+		default:
+			IsCastFromPersistant = false;
+			break;
 		}
 
 		if (IsCastFromPersistant)
 		{
-			UASEffect* Effect = NewObject<UASEffect>(InOwner, EffectPrefab);
-			Effect->Initialize(OwningCharacter->GetAttributsManager());
-			EffectDelegate.AddDynamic(Effect, &UASEffect::ApplyEffect);
+			Effects.Add(Effect);
 		}
 	}
 
-	UAnimInstance* OwningCharacter_AnimInstance = OwningCharacter->GetMesh()->GetAnimInstance();
 
-	OwningCharacter_AnimInstance->OnMontageStarted.AddDynamic(this, &UASAbility::OnAnimationStartCallback);
-	OwningCharacter_AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &UASAbility::OnTriggerAnimationEventCallback);
-	OwningCharacter_AnimInstance->OnMontageEnded.AddDynamic(this, &UASAbility::OnAnimationEndCallback);
 }
 
 void UASAbility::InitializeDuplicate(AASCharacter* InOwner)
 {
 	OwningCharacter = InOwner;
+	CasterAttributsManager = OwningCharacter->GetAttributsManager();
 }
 
 void UASAbility::StartCasting()
 {
-	UASAttributsManager* TargetAttributesManager;
-	IsTargetUnderMouse(TargetAttributesManager);
-
 	CurrentTimer = Cooldown;
 	IsInCooldown = true;
 
-	
-	UGameplayStatics::PlaySoundAtLocation(this, OnStartCasting_Sound, OwningCharacter->GetActorLocation());	
+	if (IsValid(OnStartCasting_Sound))
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, OnStartCasting_Sound, OwningCharacter->GetActorLocation());	
+	}
 
 	UAnimInstance* OwningCharacter_AnimInstance = OwningCharacter->GetMesh()->GetAnimInstance();
+	OwningCharacter_AnimInstance->OnMontageStarted.AddDynamic(this, &UASAbility::OnAnimationStartCallback);
+	OwningCharacter_AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &UASAbility::OnTriggerAnimationEventCallback);
+	OwningCharacter_AnimInstance->OnMontageEnded.AddDynamic(this, &UASAbility::OnAnimationEndCallback);
 	OwningCharacter_AnimInstance->Montage_Play(OnStartCasting_AnimMontage);
 
 	RotateTowardsMouse();
+
+
 }
 
 void UASAbility::Tick(float DelaTime)
@@ -108,7 +109,6 @@ void UASAbility::OnTriggerAnimationEventCallback(FName NotifyName, const FBranch
 	{
 		if (NotifyName == "Cast")
 		{
-			UE_LOG(LogTemp, Display, TEXT("Cast triggered"));
 			OnCastAnimationTrigger.Broadcast(OwningCharacter->GetAttributsManager());
 		}
 	}
@@ -121,8 +121,15 @@ void UASAbility::OnAnimationEndCallback(UAnimMontage* Montage, bool bInterrupted
 		if (!bInterrupted && Montage == OnStartCasting_AnimMontage)
 		{
 			OnCastAnimationEnd.Broadcast(OwningCharacter->GetAttributsManager());
-			OwningCharacter->GetCharacterMovement()->Activate();
+			if (!OwningCharacter->GetAttributsManager()->GetHasStatus(EStatus::Stunned))
+			{
+				OwningCharacter->GetCharacterMovement()->Activate();
+			}
 		}
+		UAnimInstance* OwningCharacter_AnimInstance = OwningCharacter->GetMesh()->GetAnimInstance();
+		OwningCharacter_AnimInstance->OnMontageStarted.RemoveDynamic(this, &UASAbility::OnAnimationStartCallback);
+		OwningCharacter_AnimInstance->OnPlayMontageNotifyBegin.RemoveDynamic(this, &UASAbility::OnTriggerAnimationEventCallback);
+		OwningCharacter_AnimInstance->OnMontageEnded.RemoveDynamic(this, &UASAbility::OnAnimationEndCallback);
 	}
 }
 
@@ -131,8 +138,13 @@ bool UASAbility::CanCast()
 	int CasterMana = CasterAttributsManager->Attributs.GetStat(EStat::Mana);
 	if (CasterMana >= ManaCost && !IsInCooldown)
 	{
+		if (IsTargettedAbility && !IsTargetUnderMouse(OnCastTargetAttributesManager))
+		{
+			return false;
+		}
 		return true;
 	}
+
 	return false;
 }
 
@@ -145,6 +157,7 @@ UASAbility* UASAbility::CreateAbilityInstance(AActor* NewOwner)
 {
 	UASAbility* AbilityInstance = NewObject<UASAbility>(NewOwner, GetClass());
 	AbilityInstance->InitializeDuplicate(OwningCharacter);
+	AbilityInstance->SetOnCastTargetAttributsManager(OnCastTargetAttributesManager);
 	return AbilityInstance;
 }
 
@@ -225,4 +238,25 @@ bool UASAbility::IsTargetUnderMouse(UASAttributsManager*& OutTarget)
 	}
 
 	return false;
+}
+
+TArray<UASAttributsManager*> UASAbility::GetNearbyAttributsManagers(float Radius, FVector Center)
+{
+	TArray<AActor*> Actors;
+	TArray<UASAttributsManager*> NearbyAttributsManagers;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AActor::StaticClass(), Actors);
+	
+	for (const AActor* FoundActor : Actors)
+	{
+		if (FVector::Distance(Center, FoundActor->GetActorLocation()) <= Radius)
+		{
+			UASAttributsManager* AttributsManager =  FoundActor->GetComponentByClass<UASAttributsManager>();
+			if (AttributsManager)
+			{
+				NearbyAttributsManagers.AddUnique(AttributsManager);
+			}
+		}
+	}
+    
+	return NearbyAttributsManagers;
 }

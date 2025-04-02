@@ -30,6 +30,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "AS|Stats")
 	FName BoneName;
+
+	UPROPERTY(EditAnywhere, Category = "AS|Stats")
+	bool IsTargettedAbility;
+
+	UPROPERTY()
+	UASAttributsManager* OnCastTargetAttributesManager;
 	
 	UPROPERTY()
 	bool IsInCooldown;
@@ -95,9 +101,16 @@ protected:
 	void OnCooldownEnd();
 
 	UFUNCTION()
-	UASAbility* CreateAbilityInstance(AActor* NewOwner);
+	virtual UASAbility* CreateAbilityInstance(AActor* NewOwner);
+
+	UFUNCTION()
 	void RotateTowardsMouse();
+
+	UFUNCTION()
 	bool IsTargetUnderMouse(UASAttributsManager*& OutTarget);
+
+	UFUNCTION()
+	TArray<UASAttributsManager*> GetNearbyAttributsManagers(float Radius, FVector Center);
 
 public:
 	//************ GETTERS ***************************************
@@ -112,5 +125,11 @@ public:
 	float GetCurrentTimer()
 	{
 		return CurrentTimer;
+	}
+	
+	UFUNCTION()
+	void SetOnCastTargetAttributsManager(UASAttributsManager* InOnCastTargetAttributsManager)
+	{
+		OnCastTargetAttributesManager = InOnCastTargetAttributsManager;
 	}
 };

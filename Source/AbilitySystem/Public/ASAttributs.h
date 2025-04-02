@@ -36,7 +36,7 @@ struct ABILITYSYSTEM_API FASAttributs
 	UPROPERTY(EditAnywhere)
 	TMap<EStat, float> Stats;
 	
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(VisibleAnywhere)
 	TArray<TObjectPtr<UASLingeringEffect>> ActiveEffects;
 
 	friend class UASAttributsManager;

@@ -1,9 +1,26 @@
 ﻿#include "Abilities/ASAbilityProjectile.h"
-#include "ASProjectile.h"
+#include "Projectiles/ASProjectile.h"
 #include "CharacterSystems/ASAttributsManager.h"
 #include "CharacterSystems/ASCharacter.h"
 #include "Effects/ASEffect.h"
 #include "Kismet/GameplayStatics.h"
+#include "Projectiles/ASProjectile_Targetted.h"
+
+void UASAbilityProjectile::StartCasting()
+{
+
+	Super::StartCasting();
+
+}
+
+void UASAbilityProjectile::InitializePersistant(AASCharacter* InOwner)
+{
+	if (ProjectilePrefab->IsChildOf(AActor::StaticClass()) && !IsTargettedAbility)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Has a Targetted Projectile but is not Targetted"));
+	}
+	Super::InitializePersistant(InOwner);
+}
 
 void UASAbilityProjectile::InitializeDuplicate(AASCharacter* InOwner)
 {
@@ -46,8 +63,19 @@ void UASAbilityProjectile::OnTriggerAnimationEventCallback(FName NotifyName, con
 	FRotator SpawnRotation = OwningCharacter->GetActorForwardVector().Rotation();
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	
 	AASProjectile* Projectile = GetWorld()->SpawnActor<AASProjectile>(ProjectilePrefab, SpawnLocation, SpawnRotation, SpawnParameters);
-	Projectile->Initialize(ProjectileMaxDistance, ProjectileSpeed);
+	
+	AASProjectile_Targetted* TargettedProjectile = Cast<AASProjectile_Targetted>(Projectile);
+	if (TargettedProjectile)
+	{
+		TargettedProjectile->InitializeTargettedProjectile(OnCastTargetAttributesManager, ProjectileSpeed);
+	}
+	else
+	{
+		Projectile->Initialize(ProjectileMaxDistance, ProjectileSpeed);
+	}
+	
 	UASAbilityProjectile* VolatileAbility = Cast<UASAbilityProjectile>(CreateAbilityInstance(Projectile));
 	Projectile->OnHitDelegate.BindDynamic(VolatileAbility, &UASAbilityProjectile::OnHitTargetCallback);
 	Projectile->OnMaxDistanceReachedDelegate.BindDynamic(VolatileAbility, &UASAbilityProjectile::OnProjectileMaxDistanceReachedCallback);
@@ -58,11 +86,17 @@ void UASAbilityProjectile::OnHitTargetCallback(AActor* HitActor, FVector NormalI
 	OnProjectileHit.Broadcast(OwningCharacter->GetAttributsManager());
 	if (HitActor->FindComponentByClass<UASAttributsManager>())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("OnHitTargetCallback, With name : %s"), *HitActor->GetName());
 		if (OnHitParticle != nullptr)
 		{
 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), OnHitParticle, HitResult.Location, NormalImpulse.Rotation(), true);
 		}
+
+
+		if (IsValid(OnHitSound))
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), OnHitSound, HitActor->GetActorLocation());	
+		}
+		
 		UASAttributsManager* AttributsManager = HitActor->GetComponentByClass<UASAttributsManager>();
 		OnProjectileHitAttributsManager.Broadcast(AttributsManager);
 		Projectile->Destroy();

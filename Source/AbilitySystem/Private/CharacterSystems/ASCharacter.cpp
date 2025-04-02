@@ -4,6 +4,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "CharacterSystems/ASAbilitySystem.h"
 #include "CharacterSystems/ASAttributsManager.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "UObject/UnrealTypePrivate.h"
 
 
@@ -21,8 +22,8 @@ void AASCharacter::BeginPlay()
 	Super::BeginPlay();
 	
 	APlayerController* PC = Cast<APlayerController>(GetController());
-	AttributsManagerComponent->OnStatusAdded.BindDynamic(this, &AASCharacter::BIE_OnAddStatus);
-	AttributsManagerComponent->OnStatusRemoved.BindDynamic(this, &AASCharacter::BIE_OnRemoveStatus);
+	AttributsManagerComponent->OnStatusAdded.AddDynamic(this, &AASCharacter::OnAddStatus);
+	AttributsManagerComponent->OnStatusRemoved.AddDynamic(this, &AASCharacter::OnRemoveStatus);
 	
 	if (!IsValid(PC)) return;
 	ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
@@ -94,6 +95,35 @@ int AASCharacter::GetAbilityThreeCurrentCooldown()
 int AASCharacter::GetUltimateCurrentCooldown()
 {
 	return FMath::CeilToInt(AbilitySystemComponent->GetUltimateCooldown());
+}
+
+void AASCharacter::OnAddStatus(EStatus NewStatus)
+{
+	BIE_OnAddStatus(NewStatus);
+	switch (NewStatus)
+	{
+	case EStatus::Stunned:
+		GetCharacterMovement()->Deactivate();
+		break;
+	case EStatus::Burning:
+		break;
+	default: ;
+	}
+}
+
+void AASCharacter::OnRemoveStatus(EStatus OldStatus)
+{
+	BIE_OnRemoveStatus(OldStatus);
+
+	switch (OldStatus)
+	{
+	case EStatus::Stunned:
+		GetCharacterMovement()->Activate();
+		break;
+	case EStatus::Burning:
+		break;
+	default: ;
+	}
 }
 
 

@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-
-
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "ASProjectile.generated.h"
@@ -49,5 +47,5 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION()
-	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	virtual void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 };

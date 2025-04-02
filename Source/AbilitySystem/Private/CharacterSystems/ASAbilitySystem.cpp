@@ -49,10 +49,8 @@ void UASAbilitySystem::TickComponent(float DeltaTime, enum ELevelTick TickType,
 	FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	UE_LOG(LogTemp, Log, TEXT("UASAbilitySystem::TickComponent"));
 	if (IsValid(AbilityOne))
 	{
-		UE_LOG(LogTemp, Log, TEXT("Ability one tick"));
 		AbilityOne->Tick(DeltaTime);
 	}
 	if (IsValid(AbilityTwo))
@@ -71,6 +69,9 @@ void UASAbilitySystem::TickComponent(float DeltaTime, enum ELevelTick TickType,
 
 void UASAbilitySystem::CastAbility(int AbilityIndex)
 {
+	if (OwningCharacter->GetAttributsManager()->GetHasStatus(EStatus::Stunned))
+		return;
+	
 	UASAbility* TargetAbility = nullptr;
 	switch (AbilityIndex)
 	{

@@ -12,7 +12,7 @@ void UASLingeringEffect::ApplyEffect(UASAttributsManager* InTargetAttributsManag
 	
 	TargetAttributManager = InTargetAttributsManager;
 	TargetAttributManager->AddLingeringEffect(this);
-	GetWorld()->GetTimerManager().SetTimer(Timer, this, &UASLingeringEffect::OnTimerEnded, Duration, false);
+	GetWorld()->GetTimerManager().SetTimer(Timer, this, &UASLingeringEffect::OnTimerEnded, Duration == -1 ? 999999 : Duration, false);
 
 	AASGameMode* GameMode = Cast<AASGameMode>(GetWorld()->GetAuthGameMode());
 	switch (TickRate)

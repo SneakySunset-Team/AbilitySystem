@@ -11,10 +11,12 @@ class ABILITYSYSTEM_API UASAbilityProjectile : public UASAbility
 {
 	GENERATED_BODY()
 
+public:
 	FOnAbilityTrigger OnProjectileHit;
 	FOnAbilityTrigger OnProjectileHitAttributsManager;
 	FOnAbilityTrigger OnProjectileReachMaxDistance;
-	
+
+protected:
 	UPROPERTY(EditAnywhere, Category = "AS|Stats")
 	TSubclassOf<AASProjectile> ProjectilePrefab;
 
@@ -29,8 +31,14 @@ class ABILITYSYSTEM_API UASAbilityProjectile : public UASAbility
 
 	UPROPERTY(EditAnywhere, Category = "AS|Cosmetics")
 	TObjectPtr<UParticleSystem> OnHitParticle;
+
+public:
+	virtual void InitializePersistant(AASCharacter* InOwner) override;
 	
 	virtual void InitializeDuplicate(AASCharacter* InOwner) override;
+	
+	virtual void StartCasting() override;
+	
 	
 	virtual void OnTriggerAnimationEventCallback(FName NotifyName, const FBranchingPointNotifyPayload& Payload) override;
 
@@ -39,4 +47,10 @@ class ABILITYSYSTEM_API UASAbilityProjectile : public UASAbility
 
 	UFUNCTION()
 	virtual void OnProjectileMaxDistanceReachedCallback();
+
+	UFUNCTION()
+	float GetProjectileSpeed()
+	{
+		return ProjectileSpeed;
+	}
 };
