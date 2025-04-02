@@ -47,7 +47,7 @@ void UASAbility_Conflagration::OnTriggerAnimationEventCallback(FName NotifyName,
 					
 				}
 			}
-			OnCastAnimationTrigger.Broadcast(OnCastTargetAttributesManager);
+			OnCastAnimationTrigger.Broadcast(OnCastTargetAttributesManager, EASActivationType::OnAnimationTriggerEvent);
 		}
 	}
 }

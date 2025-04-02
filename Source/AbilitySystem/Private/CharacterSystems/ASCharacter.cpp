@@ -34,6 +34,11 @@ void AASCharacter::BeginPlay()
 
 }
 
+void AASCharacter::OnTriggerAutoAttack()
+{
+	AbilitySystemComponent->CastAbility(0);
+}
+
 void AASCharacter::OnTriggerAbilityOne()
 {
 	AbilitySystemComponent->CastAbility(1);
@@ -54,6 +59,8 @@ void AASCharacter::OnTriggerUltimate()
 	AbilitySystemComponent->CastAbility(4);
 }
 
+
+
 void AASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -64,6 +71,7 @@ void AASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EnhancedInputComponent->BindAction(IA_AbilityTwo, ETriggerEvent::Triggered, this, &AASCharacter::OnTriggerAbilityTwo);
 		EnhancedInputComponent->BindAction(IA_AbilityThree, ETriggerEvent::Triggered, this, &AASCharacter::OnTriggerAbilityThree);
 		EnhancedInputComponent->BindAction(IA_Ultimate, ETriggerEvent::Triggered, this, &AASCharacter::OnTriggerUltimate);
+		EnhancedInputComponent->BindAction(IA_AutoAttack, ETriggerEvent::Triggered, this, &AASCharacter::OnTriggerAutoAttack);
 	}
 }
 

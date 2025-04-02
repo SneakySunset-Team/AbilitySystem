@@ -15,7 +15,7 @@ void UASAbilityProjectile::StartCasting()
 
 void UASAbilityProjectile::InitializePersistant(AASCharacter* InOwner)
 {
-	if (ProjectilePrefab->IsChildOf(AActor::StaticClass()) && !IsTargettedAbility)
+	if (ProjectilePrefab->IsChildOf(AASProjectile_Targetted::StaticClass()) && !IsTargettedAbility)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Has a Targetted Projectile but is not Targetted"));
 	}
@@ -26,33 +26,9 @@ void UASAbilityProjectile::InitializeDuplicate(AASCharacter* InOwner)
 {
 	Super::InitializeDuplicate(InOwner);
 
-	for (const auto EffectPrefab : EffectsPrefabs)
-	{
-		bool IsCastFromDuplicate = true;
-		
-		UASEffect* Effect = NewObject<UASEffect>(this, EffectPrefab);
-		Effect->Initialize(OwningCharacter->GetAttributsManager());
-		switch (Effect->GetActivationType())
-		{
-		case EASActivationType::OnHit:
-			OnProjectileHit.AddDynamic(Effect, &UASEffect::ApplyEffect);
-			break;
-		case EASActivationType::OnHitTarget:
-			OnProjectileHitAttributsManager.AddDynamic(Effect, &UASEffect::ApplyEffect);
-			break;
-		case EASActivationType::OnProjectileReachMaxDistance:
-			OnProjectileReachMaxDistance.AddDynamic(Effect, &UASEffect::ApplyEffect);
-			break;
-		default:
-			IsCastFromDuplicate = false;
-			break;
-		}
-
-		if (IsCastFromDuplicate)
-		{
-			Effects.Add(Effect);
-		}
-	}
+	OnProjectileHit.AddDynamic(this, &UASAbilityProjectile::ApplyEffects);
+	OnProjectileHitAttributsManager.AddDynamic(this, &UASAbilityProjectile::ApplyEffects);
+	OnProjectileReachMaxDistance.AddDynamic(this, &UASAbilityProjectile::ApplyEffects);
 }
 
 void UASAbilityProjectile::OnTriggerAnimationEventCallback(FName NotifyName, const FBranchingPointNotifyPayload& Payload)
@@ -83,7 +59,7 @@ void UASAbilityProjectile::OnTriggerAnimationEventCallback(FName NotifyName, con
 
 void UASAbilityProjectile::OnHitTargetCallback(AActor* HitActor, FVector NormalImpulse, const FHitResult& HitResult, AActor* Projectile)
 {
-	OnProjectileHit.Broadcast(OwningCharacter->GetAttributsManager());
+	OnProjectileHit.Broadcast(OwningCharacter->GetAttributsManager(), EASActivationType::OnHit);
 	if (HitActor->FindComponentByClass<UASAttributsManager>())
 	{
 		if (OnHitParticle != nullptr)
@@ -98,12 +74,12 @@ void UASAbilityProjectile::OnHitTargetCallback(AActor* HitActor, FVector NormalI
 		}
 		
 		UASAttributsManager* AttributsManager = HitActor->GetComponentByClass<UASAttributsManager>();
-		OnProjectileHitAttributsManager.Broadcast(AttributsManager);
+		OnProjectileHitAttributsManager.Broadcast(AttributsManager, EASActivationType::OnHitTarget);
 		Projectile->Destroy();
 	}
 }
 
 void UASAbilityProjectile::OnProjectileMaxDistanceReachedCallback()
 {
-	OnProjectileReachMaxDistance.Broadcast(OwningCharacter->GetAttributsManager());
+	OnProjectileReachMaxDistance.Broadcast(OwningCharacter->GetAttributsManager(), EASActivationType::OnProjectileReachMaxDistance);
 }

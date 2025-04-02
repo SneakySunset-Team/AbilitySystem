@@ -18,6 +18,10 @@ class ABILITYSYSTEM_API UASAbilitySystem : public UActorComponent
 	UPROPERTY()
 	TObjectPtr<AASCharacter> OwningCharacter;
 
+
+	UPROPERTY(EditAnywhere, Category="Abilities")
+	TSubclassOf<UASAbility> AutoAttackPrefab;
+	
 	UPROPERTY(EditAnywhere, Category="Abilities")
 	TSubclassOf<UASAbility> AbilityOnePrefab;
 
@@ -30,6 +34,9 @@ class ABILITYSYSTEM_API UASAbilitySystem : public UActorComponent
 	UPROPERTY(EditAnywhere, Category="Abilities")
 	TSubclassOf<UASAbility> UltimatePrefab;
 
+	UPROPERTY()
+	TObjectPtr<UASAbility> AutoAttack;
+	
 	UPROPERTY()
 	TObjectPtr<UASAbility> AbilityOne;
 

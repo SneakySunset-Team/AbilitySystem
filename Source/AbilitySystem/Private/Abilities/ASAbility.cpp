@@ -13,35 +13,14 @@ void UASAbility::InitializePersistant(AASCharacter* InOwner)
 {
 	OwningCharacter = InOwner;
 
-	for (const auto EffectPrefab : EffectsPrefabs)
+	OnCastAnimationStart.AddDynamic(this, &UASAbility::ApplyEffects);
+	OnCastAnimationTrigger.AddDynamic(this, &UASAbility::ApplyEffects);
+	OnCastAnimationEnd.AddDynamic(this, &UASAbility::ApplyEffects);
+
+	if (IsSelfStunnedDuringCast && IsValid(SelfStunPrefab))
 	{
-		bool IsCastFromPersistant = true;
-		
-		UASEffect* Effect = NewObject<UASEffect>(this, EffectPrefab);
-		Effect->Initialize(OwningCharacter->GetAttributsManager());
-		switch (Effect->GetActivationType())
-		{
-		case EASActivationType::OnStartCasting:
-			OnCastAnimationStart.AddDynamic(Effect, &UASEffect::ApplyEffect);
-			break;
-		case EASActivationType::OnAnimationTriggerEvent:
-			OnCastAnimationTrigger.AddDynamic(Effect, &UASEffect::ApplyEffect);
-			break;
-		case EASActivationType::OnEndAnimation:
-			OnCastAnimationEnd.AddDynamic(Effect, &UASEffect::ApplyEffect);
-			break;
-		default:
-			IsCastFromPersistant = false;
-			break;
-		}
-
-		if (IsCastFromPersistant)
-		{
-			Effects.Add(Effect);
-		}
+		SelfStunEffect = NewObject<UASLingeringEffect>(this, SelfStunPrefab);
 	}
-
-
 }
 
 void UASAbility::InitializeDuplicate(AASCharacter* InOwner)
@@ -54,7 +33,9 @@ void UASAbility::StartCasting()
 {
 	CurrentTimer = Cooldown;
 	IsInCooldown = true;
+	
 
+	
 	if (IsValid(OnStartCasting_Sound))
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, OnStartCasting_Sound, OwningCharacter->GetActorLocation());	
@@ -88,10 +69,15 @@ void UASAbility::OnAnimationStartCallback(UAnimMontage* Montage)
 {
 	if (Montage == OnStartCasting_AnimMontage)
 	{
-		OnCastAnimationStart.Broadcast(OwningCharacter->GetAttributsManager());
+		OnCastAnimationStart.Broadcast(OwningCharacter->GetAttributsManager(), EASActivationType::OnStartCasting);
+
+		if (IsSelfStunnedDuringCast && IsValid(SelfStunPrefab))
+		{
+			CasterAttributsManager->AddLingeringEffect(SelfStunEffect);
+		}
+		
 		IsInCooldown = true;
 		CasterAttributsManager->EditStat(EStat::Mana, -ManaCost);
-		OwningCharacter->GetCharacterMovement()->Deactivate();
 	}
 }
 
@@ -109,7 +95,7 @@ void UASAbility::OnTriggerAnimationEventCallback(FName NotifyName, const FBranch
 	{
 		if (NotifyName == "Cast")
 		{
-			OnCastAnimationTrigger.Broadcast(OwningCharacter->GetAttributsManager());
+			OnCastAnimationTrigger.Broadcast(OwningCharacter->GetAttributsManager(), EASActivationType::OnAnimationTriggerEvent);
 		}
 	}
 }
@@ -118,13 +104,14 @@ void UASAbility::OnAnimationEndCallback(UAnimMontage* Montage, bool bInterrupted
 {
 	if (Montage == OnStartCasting_AnimMontage)
 	{
-		if (!bInterrupted && Montage == OnStartCasting_AnimMontage)
+		if (IsSelfStunnedDuringCast && IsValid(SelfStunPrefab))
 		{
-			OnCastAnimationEnd.Broadcast(OwningCharacter->GetAttributsManager());
-			if (!OwningCharacter->GetAttributsManager()->GetHasStatus(EStatus::Stunned))
-			{
-				OwningCharacter->GetCharacterMovement()->Activate();
-			}
+			CasterAttributsManager->RemoveLingeringEffect(SelfStunEffect);
+		}
+
+		if (!bInterrupted)
+		{
+			OnCastAnimationEnd.Broadcast(OwningCharacter->GetAttributsManager(), EASActivationType::OnEndAnimation);
 		}
 		UAnimInstance* OwningCharacter_AnimInstance = OwningCharacter->GetMesh()->GetAnimInstance();
 		OwningCharacter_AnimInstance->OnMontageStarted.RemoveDynamic(this, &UASAbility::OnAnimationStartCallback);
@@ -138,8 +125,29 @@ bool UASAbility::CanCast()
 	int CasterMana = CasterAttributsManager->Attributs.GetStat(EStat::Mana);
 	if (CasterMana >= ManaCost && !IsInCooldown)
 	{
-		if (IsTargettedAbility && !IsTargetUnderMouse(OnCastTargetAttributesManager))
+		if (IsTargettedAbility &&
+			!IsTargetUnderMouse(OnCastTargetAttributesManager))
 		{
+			return false;
+		}
+
+		FVector ClickPosition = GetMousePosition();
+		
+		if (!IsTargetCloseEnough(ClickPosition))
+		{
+			FVector Origin = OwningCharacter->GetActorLocation();
+			Origin.Z = 0;
+			DrawCircle(
+				GetWorld(),
+				Origin,
+				FVector::RightVector,
+				FVector::ForwardVector,
+				FColor::Red,
+				MaxCastDistance,
+				64,
+				false,
+				2,
+				3);
 			return false;
 		}
 		return true;
@@ -163,44 +171,18 @@ UASAbility* UASAbility::CreateAbilityInstance(AActor* NewOwner)
 
 void UASAbility::RotateTowardsMouse()
 {
-	APlayerController* PlayerController = Cast<APlayerController>(OwningCharacter->GetController());
-	if (!PlayerController) return;
-
-	// Get mouse position in screen space
-	float MouseX, MouseY;
-	PlayerController->GetMousePosition(MouseX, MouseY);
-    
-	// Convert mouse position to world space using a line trace
-	FVector WorldLocation, WorldDirection;
-	PlayerController->DeprojectScreenPositionToWorld(MouseX, MouseY, WorldLocation, WorldDirection);
-    
-	// Setup collision params for line trace
-	FCollisionQueryParams CollisionParams;
-	CollisionParams.AddIgnoredActor(OwningCharacter);
-    
-	// Calculate start and end of line trace
-	FVector TraceStart = WorldLocation;
-	FVector TraceEnd = WorldLocation + WorldDirection * 10000.0f; // Far distance
-    
-	// Perform line trace to find where mouse ray intersects the ground
-	FHitResult HitResult;
-	if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, CollisionParams))
-	{
-		// The hit location is where the mouse points in the world
-		FVector MouseWorldPosition = HitResult.Location;
+	FVector MouseWorldPosition = GetMousePosition();
+	// Calculate the direction to face (ignoring Z component for a top-down game)
+	FVector CharacterLocation = OwningCharacter->GetActorLocation();
+	FVector DirectionToMouse = MouseWorldPosition - CharacterLocation;
+	DirectionToMouse.Z = 0; // Ignore height difference
+	DirectionToMouse = DirectionToMouse.GetSafeNormal();
         
-		// Calculate the direction to face (ignoring Z component for a top-down game)
-		FVector CharacterLocation = OwningCharacter->GetActorLocation();
-		FVector DirectionToMouse = MouseWorldPosition - CharacterLocation;
-		DirectionToMouse.Z = 0; // Ignore height difference
-		DirectionToMouse = DirectionToMouse.GetSafeNormal();
-        
-		// Create rotation from direction
-		FRotator NewRotation = DirectionToMouse.Rotation();
-        
-		// Apply rotation instantly
-		OwningCharacter->SetActorRotation(NewRotation);
-	}
+	// Create rotation from direction
+	FRotator NewRotation = DirectionToMouse.Rotation();
+    
+	// Apply rotation instantly
+	OwningCharacter->SetActorRotation(NewRotation);
 }
 
 bool UASAbility::IsTargetUnderMouse(UASAttributsManager*& OutTarget)
@@ -226,18 +208,23 @@ bool UASAbility::IsTargetUnderMouse(UASAttributsManager*& OutTarget)
     
 	// Perform line trace to find where mouse ray intersects the ground
 	FHitResult HitResult;
-	if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, CollisionParams))
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_PhysicsBody, CollisionParams))
 	{
 		UASAttributsManager* TargetAttributManager = HitResult.GetActor()->GetComponentByClass<UASAttributsManager>();
 		if (TargetAttributManager)
 		{
 			OutTarget = TargetAttributManager;
-			UE_LOG(LogTemp, Display, TEXT("Target Hit by Mouse"));
 			return true;
 		}
 	}
 
 	return false;
+}
+
+bool UASAbility::IsTargetCloseEnough(FVector TargetPosition)
+{
+	float Distance = FVector::Distance(OwningCharacter->GetActorLocation(), TargetPosition);
+	return  Distance < MaxCastDistance;
 }
 
 TArray<UASAttributsManager*> UASAbility::GetNearbyAttributsManagers(float Radius, FVector Center)
@@ -260,3 +247,50 @@ TArray<UASAttributsManager*> UASAbility::GetNearbyAttributsManagers(float Radius
     
 	return NearbyAttributsManagers;
 }
+
+void UASAbility::ApplyEffects(UASAttributsManager* TargetAttributManager, EASActivationType ActivationType)
+{
+	for (auto EffectPrefab : EffectsPrefabs)
+	{
+		if (EffectPrefab->GetDefaultObject<UASEffect>()->GetActivationType() == ActivationType)
+		{
+			UASEffect* Effect = NewObject<UASEffect>(this, EffectPrefab);
+			Effect->Initialize(CasterAttributsManager);
+			Effect->ApplyEffect(TargetAttributManager);
+		}
+	}
+}
+
+FVector UASAbility::GetMousePosition()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(OwningCharacter->GetController());
+	if (!PlayerController) return FVector::ZeroVector;
+
+	// Get mouse position in screen space
+	float MouseX, MouseY;
+	PlayerController->GetMousePosition(MouseX, MouseY);
+    
+	// Convert mouse position to world space using a line trace
+	FVector WorldLocation, WorldDirection;
+	PlayerController->DeprojectScreenPositionToWorld(MouseX, MouseY, WorldLocation, WorldDirection);
+    
+	// Setup collision params for line trace
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(OwningCharacter);
+    
+	// Calculate start and end of line trace
+	FVector TraceStart = WorldLocation;
+	FVector TraceEnd = WorldLocation + WorldDirection * 10000.0f; // Far distance
+    
+	// Perform line trace to find where mouse ray intersects the ground
+	FHitResult HitResult;
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, CollisionParams))
+	{
+		// The hit location is where the mouse points in the world
+		FVector MouseWorldPosition = HitResult.Location;
+		return MouseWorldPosition;
+	}
+
+	return FVector::ZeroVector;
+}
+	

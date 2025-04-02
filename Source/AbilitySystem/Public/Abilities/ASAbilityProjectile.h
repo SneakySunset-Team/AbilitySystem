@@ -23,7 +23,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "AS|Cosmetics")
 	TObjectPtr<USoundBase> OnHitSound;
 
-	UPROPERTY(EditAnywhere, Category = "AS|Stats")
+	UPROPERTY(EditAnywhere, Category = "AS|Stats", meta = (EditConditionHides = "!IsTargettedAbility"))
 	float ProjectileMaxDistance;
 
 	UPROPERTY(EditAnywhere, Category = "AS|Stats")

@@ -5,15 +5,13 @@
 #include "Kismet/GameplayStatics.h"
 #include "Projectiles/ASProjectile_Targetted.h"
 
-
-
 void UASAbilityProjectile_Pyroclasm::OnHitTargetCallback(AActor* HitActor, FVector NormalImpulse,
                                                          const FHitResult& HitResult, AActor* Projectile)
 {
 	if (HitActor != OwningCharacter)
 	{
-		OnProjectileHit.Broadcast(OwningCharacter->GetAttributsManager());
-		OnProjectileHitAttributsManager.Broadcast(OnCastTargetAttributesManager);
+		OnProjectileHit.Broadcast(OwningCharacter->GetAttributsManager(), EASActivationType::OnHit);
+		OnProjectileHitAttributsManager.Broadcast(OnCastTargetAttributesManager, EASActivationType::OnHitTarget);
 	}
 	if (OnHitParticle != nullptr)
 	{

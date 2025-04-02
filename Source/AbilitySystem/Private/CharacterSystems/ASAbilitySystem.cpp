@@ -16,6 +16,13 @@ void UASAbilitySystem::BeginPlay()
 
 	OwningCharacter = Cast<AASCharacter>(GetOwner());
 
+	if (IsValid(AutoAttackPrefab))
+	{
+		AutoAttack = NewObject<UASAbility>(this, AutoAttackPrefab);
+		AutoAttack->InitializePersistant(OwningCharacter);
+		AutoAttack->SetCasterAttributs(OwningCharacter->GetAttributsManager());
+	}
+	
 	if (IsValid(AbilityOnePrefab))
 	{
 		AbilityOne = NewObject<UASAbility>(this, AbilityOnePrefab);
@@ -49,6 +56,11 @@ void UASAbilitySystem::TickComponent(float DeltaTime, enum ELevelTick TickType,
 	FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (IsValid(AutoAttack))
+	{
+		AutoAttack->Tick(DeltaTime);
+	}
 	if (IsValid(AbilityOne))
 	{
 		AbilityOne->Tick(DeltaTime);
@@ -75,6 +87,9 @@ void UASAbilitySystem::CastAbility(int AbilityIndex)
 	UASAbility* TargetAbility = nullptr;
 	switch (AbilityIndex)
 	{
+		case 0:
+			TargetAbility = AutoAttack;
+			break;
 		case 1 :
 			TargetAbility = AbilityOne;
 			break;

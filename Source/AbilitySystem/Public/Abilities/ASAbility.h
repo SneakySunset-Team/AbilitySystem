@@ -5,12 +5,14 @@
 #include "ASAbility.generated.h"
 
 
+class UASLingeringEffect;
+enum class EASActivationType : uint8;
 class AASCharacter;
 class UASEffect;
 class UASAttributsManager;
 struct FASAttributs;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAbilityTrigger, UASAttributsManager*, AttributsManager);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAbilityTrigger, UASAttributsManager*, AttributsManager, EASActivationType, ActivationType);
 
 UCLASS(BlueprintType, Blueprintable)
 class ABILITYSYSTEM_API UASAbility : public UObject
@@ -34,18 +36,15 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "AS|Stats")
 	bool IsTargettedAbility;
 
+	UPROPERTY(EditAnywhere, Category = "AS|Stats", meta = (EditConditionHides = "!IsTargettedAbility"))
+	float MaxCastDistance;
+	
 	UPROPERTY()
 	UASAttributsManager* OnCastTargetAttributesManager;
 	
 	UPROPERTY()
 	bool IsInCooldown;
-
-	// List of Effects that will be applied by the ability on Hit.
-	// If I was implementing a level up system I would probably introduce a
-	// TMap<int, TArray<TSubclassOf<UASEffect>> with each key beeing the level
-	// at which the effect will be in use.
-	// (this would also allow me to introduce additional effects on level up)
-	// Going further would be implementing the TMap in the Ability System for the abilities.
+	
 	UPROPERTY(EditAnywhere, Category = "AS|Stats")
 	TArray<TSubclassOf<UASEffect>> EffectsPrefabs;
 
@@ -68,6 +67,15 @@ protected:
 	float CurrentTimer;
 	
 	FTimerHandle CooldownTimerHandle;
+
+	UPROPERTY(EditAnywhere, Category = "AS|Stats")
+	bool IsSelfStunnedDuringCast;
+	
+	UPROPERTY(EditAnywhere, Category = "AS|Stats", meta = (EditConditionHides = "IsSelfStunnedDuringCast"))
+	TSubclassOf<UASLingeringEffect> SelfStunPrefab;
+	
+	UPROPERTY()
+	TObjectPtr<UASLingeringEffect> SelfStunEffect;
 
 public:
 	UFUNCTION()
@@ -110,8 +118,17 @@ protected:
 	bool IsTargetUnderMouse(UASAttributsManager*& OutTarget);
 
 	UFUNCTION()
+	bool IsTargetCloseEnough(FVector TargetPosition);
+	
+	UFUNCTION()
 	TArray<UASAttributsManager*> GetNearbyAttributsManagers(float Radius, FVector Center);
 
+	UFUNCTION()
+	virtual void ApplyEffects(UASAttributsManager* TargetAttributManager, EASActivationType ActivationType);
+
+	UFUNCTION()
+	FVector GetMousePosition();
+	
 public:
 	//************ GETTERS ***************************************
 

@@ -40,8 +40,12 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UInputAction> IA_Ultimate;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UInputAction> IA_AutoAttack;
 	
 	virtual void BeginPlay() override;
+	void OnTriggerAutoAttack();
 
 	virtual void OnTriggerAbilityOne();
 	virtual void OnTriggerAbilityTwo();
