@@ -1,4 +1,4 @@
-﻿#include "Abilities/ASAbility.h"
+#include "Abilities/ASAbility.h"
 #include "ASAttributs.h"
 #include "SQCapture.h"
 #include "AbilitySystem/Public/CharacterSystems/ASAttributsManager.h"
@@ -33,9 +33,8 @@ void UASAbility::StartCasting()
 {
 	CurrentTimer = Cooldown;
 	IsInCooldown = true;
-	
-
-	
+    CasterAttributsManager->EditStat(EStat::Mana, -ManaCost);
+    
 	if (IsValid(OnStartCasting_Sound))
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, OnStartCasting_Sound, OwningCharacter->GetActorLocation());	
@@ -75,9 +74,6 @@ void UASAbility::OnAnimationStartCallback(UAnimMontage* Montage)
 		{
 			CasterAttributsManager->AddLingeringEffect(SelfStunEffect);
 		}
-		
-		IsInCooldown = true;
-		CasterAttributsManager->EditStat(EStat::Mana, -ManaCost);
 	}
 }
 

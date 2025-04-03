@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -14,6 +14,9 @@ class ABILITYSYSTEM_API UASEffectCondition : public UObject
 	GENERATED_BODY()
 
 public:
+    /**
+     * @param InTargetAttributsManager the provided AttributsManager that helps to check if the effect should trigger
+     */
 	UFUNCTION()
 	virtual bool GetConditionValidation(UASAttributsManager* InTargetAttributsManager);
 };

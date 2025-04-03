@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -14,6 +14,7 @@ class ABILITYSYSTEM_API AASGameMode : public AAbilitySystemGameMode
 	GENERATED_BODY()
 
 public:
+    // Delegates that are triggered on 250, 500 and 1000 ms intervals
 	FOnTimerEvent OnTimerEvent_250ms;
 	FOnTimerEvent OnTimerEvent_500ms;
 	FOnTimerEvent OnTimerEvent_1000ms;
