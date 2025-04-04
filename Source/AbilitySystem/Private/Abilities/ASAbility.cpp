@@ -46,7 +46,7 @@ void UASAbility::StartCasting()
 	OwningCharacter_AnimInstance->OnMontageEnded.AddDynamic(this, &UASAbility::OnAnimationEndCallback);
 	OwningCharacter_AnimInstance->Montage_Play(OnStartCasting_AnimMontage);
 
-	RotateTowardsMouse();
+	RotateTowardsTargetPosition();
 
 
 }
@@ -121,16 +121,21 @@ bool UASAbility::CanCast()
 	int CasterMana = CasterAttributsManager->Attributs.GetStat(EStat::Mana);
 	if (CasterMana >= ManaCost && !IsInCooldown)
 	{
-		if (IsTargettedAbility &&
-			!IsTargetUnderMouse(OnCastTargetAttributesManager))
+		FVector WorldLocation, WorldDirection;
+		FHitResult HitResult;
+		if (!OwningCharacter->GetTargetPosition(WorldLocation, WorldDirection, HitResult))
 		{
 			return false;
 		}
-
-		FVector ClickPosition = GetMousePosition();
 		
-		if (!IsTargetCloseEnough(ClickPosition))
+		if (IsTargettedAbility &&
+			!IsTargetPositionPointingToAttributsManager(OnCastTargetAttributesManager))
 		{
+			return false;
+		}
+		
+		
+		if (IsTargettedAbility && !IsTargetCloseEnough(WorldLocation)){
 			FVector Origin = OwningCharacter->GetActorLocation();
 			Origin.Z = 0;
 			DrawCircle(
@@ -165,55 +170,40 @@ UASAbility* UASAbility::CreateAbilityInstance(AActor* NewOwner)
 	return AbilityInstance;
 }
 
-void UASAbility::RotateTowardsMouse()
+void UASAbility::RotateTowardsTargetPosition()
 {
-	FVector MouseWorldPosition = GetMousePosition();
+	FVector WorldLocation, WorldDirection;
+	FHitResult HitResult;
+	if (!OwningCharacter->GetTargetPosition(WorldLocation, WorldDirection, HitResult))
+	{
+	}
 	// Calculate the direction to face (ignoring Z component for a top-down game)
 	FVector CharacterLocation = OwningCharacter->GetActorLocation();
-	FVector DirectionToMouse = MouseWorldPosition - CharacterLocation;
-	DirectionToMouse.Z = 0; // Ignore height difference
-	DirectionToMouse = DirectionToMouse.GetSafeNormal();
+	FVector DirectionToTarget = WorldLocation - CharacterLocation;
+	DirectionToTarget.Z = 0; // Ignore height difference
+	DirectionToTarget = DirectionToTarget.GetSafeNormal();
         
 	// Create rotation from direction
-	FRotator NewRotation = DirectionToMouse.Rotation();
+	FRotator NewRotation = DirectionToTarget.Rotation();
     
 	// Apply rotation instantly
 	OwningCharacter->SetActorRotation(NewRotation);
 }
 
-bool UASAbility::IsTargetUnderMouse(UASAttributsManager*& OutTarget)
+bool UASAbility::IsTargetPositionPointingToAttributsManager(UASAttributsManager*& OutTarget)
 {
-	APlayerController* PlayerController = Cast<APlayerController>(OwningCharacter->GetController());
-	if (!PlayerController) return false;
-
-	// Get mouse position in screen space
-	float MouseX, MouseY;
-	PlayerController->GetMousePosition(MouseX, MouseY);
-    
-	// Convert mouse position to world space using a line trace
 	FVector WorldLocation, WorldDirection;
-	PlayerController->DeprojectScreenPositionToWorld(MouseX, MouseY, WorldLocation, WorldDirection);
-    
-	// Setup collision params for line trace
-	FCollisionQueryParams CollisionParams;
-	CollisionParams.AddIgnoredActor(OwningCharacter);
-    
-	// Calculate start and end of line trace
-	FVector TraceStart = WorldLocation;
-	FVector TraceEnd = WorldLocation + WorldDirection * 10000.0f; // Far distance
-    
-	// Perform line trace to find where mouse ray intersects the ground
 	FHitResult HitResult;
-	if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_PhysicsBody, CollisionParams))
+	if (!OwningCharacter->GetTargetPosition(WorldLocation, WorldDirection, HitResult, ECC_PhysicsBody))
 	{
-		UASAttributsManager* TargetAttributManager = HitResult.GetActor()->GetComponentByClass<UASAttributsManager>();
-		if (TargetAttributManager)
-		{
-			OutTarget = TargetAttributManager;
-			return true;
-		}
+		return false;
 	}
-
+	UASAttributsManager* TargetAttributManager = HitResult.GetActor()->GetComponentByClass<UASAttributsManager>();
+	if (TargetAttributManager)
+	{
+		OutTarget = TargetAttributManager;
+		return true;
+	}
 	return false;
 }
 
@@ -257,36 +247,5 @@ void UASAbility::ApplyEffects(UASAttributsManager* TargetAttributManager, EASAct
 	}
 }
 
-FVector UASAbility::GetMousePosition()
-{
-	APlayerController* PlayerController = Cast<APlayerController>(OwningCharacter->GetController());
-	if (!PlayerController) return FVector::ZeroVector;
 
-	// Get mouse position in screen space
-	float MouseX, MouseY;
-	PlayerController->GetMousePosition(MouseX, MouseY);
-    
-	// Convert mouse position to world space using a line trace
-	FVector WorldLocation, WorldDirection;
-	PlayerController->DeprojectScreenPositionToWorld(MouseX, MouseY, WorldLocation, WorldDirection);
-    
-	// Setup collision params for line trace
-	FCollisionQueryParams CollisionParams;
-	CollisionParams.AddIgnoredActor(OwningCharacter);
-    
-	// Calculate start and end of line trace
-	FVector TraceStart = WorldLocation;
-	FVector TraceEnd = WorldLocation + WorldDirection * 10000.0f; // Far distance
-    
-	// Perform line trace to find where mouse ray intersects the ground
-	FHitResult HitResult;
-	if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, CollisionParams))
-	{
-		// The hit location is where the mouse points in the world
-		FVector MouseWorldPosition = HitResult.Location;
-		return MouseWorldPosition;
-	}
-
-	return FVector::ZeroVector;
-}
 	

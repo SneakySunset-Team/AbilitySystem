@@ -180,14 +180,14 @@ protected:
      * Gets mouse position and then move the owning character towards it
      */
 	UFUNCTION()
-	void RotateTowardsMouse();
+	void RotateTowardsTargetPosition();
 
     /**
      * Checks if there is a target under the mouse
      * @param OutTarget Cache in the target if there is one
      */
 	UFUNCTION()
-	bool IsTargetUnderMouse(UASAttributsManager*& OutTarget);
+	bool IsTargetPositionPointingToAttributsManager(UASAttributsManager*& OutTarget);
 
     /**
      * Check if the ability target position is within the max range of the ability
@@ -212,13 +212,6 @@ protected:
 	UFUNCTION()
 	virtual void ApplyEffects(UASAttributsManager* TargetAttributManager, EASActivationType ActivationType);
 
-    /**
-     * Retrives the current position of the mouse of the player controller of the Owning Character
-     * This shouldn't be here and this should be retrieved from the caster as a position (that could be the mouse or another input from an AI)
-     */
-	UFUNCTION()
-	FVector GetMousePosition();
-	
 public:
 	//************ GETTERS ***************************************
 

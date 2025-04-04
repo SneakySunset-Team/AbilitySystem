@@ -59,6 +59,38 @@ void AASCharacter::OnTriggerUltimate()
 	AbilitySystemComponent->CastAbility(4);
 }
 
+bool AASCharacter::GetTargetPosition(FVector& OutWorldLocation, FVector& OutWorldDirection, FHitResult& HitResult, ECollisionChannel TraceChannel)
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (!PlayerController) return false;
+
+	// Get mouse position in screen space
+	float MouseX, MouseY;
+	PlayerController->GetMousePosition(MouseX, MouseY);
+
+	FVector WorldLocation, WorldDirection;
+	// Convert mouse position to world space using a line trace
+	PlayerController->DeprojectScreenPositionToWorld(MouseX, MouseY, WorldLocation, WorldDirection);
+    
+	// Setup collision params for line trace
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(this);
+    
+	// Calculate start and end of line trace
+	FVector TraceStart = WorldLocation;
+	FVector TraceEnd = WorldLocation + WorldDirection * 10000.0f; // Far distance
+    
+	// Perform line trace to find where mouse ray intersects the ground
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, TraceChannel, CollisionParams))
+	{
+		// The hit location is where the mouse points in the world
+		OutWorldLocation = HitResult.Location;
+		OutWorldDirection = HitResult.Normal;	
+		return true;
+	}
+
+	return false;
+}
 
 
 void AASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

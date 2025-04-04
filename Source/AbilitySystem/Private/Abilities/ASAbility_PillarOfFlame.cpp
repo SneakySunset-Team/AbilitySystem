@@ -15,7 +15,9 @@ void UASAbility_PillarOfFlame::InitializePersistant(AASCharacter* InOwner)
 void UASAbility_PillarOfFlame::StartCasting()
 {
 	Super::StartCasting();
-	MouseTarget = GetMousePosition();
+	FVector TargetDirection;
+	FHitResult HitResult; 
+	OwningCharacter->GetTargetPosition(TargetLocation, TargetDirection, HitResult);
 }
 
 void UASAbility_PillarOfFlame::OnTriggerAnimationEventCallback(FName NotifyName,
@@ -37,15 +39,15 @@ void UASAbility_PillarOfFlame::OnTriggerAnimationEventCallback(FName NotifyName,
 
 			FTimerHandle TimerHandle;
 			GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UASAbility_PillarOfFlame::ApplyFlamePillar, FlamePillarDelayBeforeDamage, false, -1);
-			VisualZone = GetWorld()->SpawnActor<AActor>(VisualZonePrefab, MouseTarget, FRotator::ZeroRotator);
-			VisualZone->SetActorScale3D(FVector(FlamePillarRadius / 150.0f, FlamePillarRadius / 150.0f, 1));
+			VisualZone = GetWorld()->SpawnActor<AActor>(VisualZonePrefab, TargetLocation, FRotator::ZeroRotator);
+			VisualZone->SetActorScale3D(FVector(FlamePillarRadius / 100.0f, FlamePillarRadius / 100.0f, 1));
 		}
 	}
 }
 
 void UASAbility_PillarOfFlame::ApplyFlamePillar()
 {
-	TArray<UASAttributsManager*> AttributsManagerInRadius = GetNearbyAttributsManagers(FlamePillarRadius, MouseTarget);
+	TArray<UASAttributsManager*> AttributsManagerInRadius = GetNearbyAttributsManagers(FlamePillarRadius, TargetLocation);
 
 	VisualZone->Destroy();
 	ETeam CasterTeam = CasterAttributsManager->GetTeam();

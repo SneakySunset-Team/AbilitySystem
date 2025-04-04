@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "ASAbility.h"
@@ -33,7 +33,7 @@ protected:
 	
     // The Position where the Damage zone will be applied
 	UPROPERTY()
-	FVector MouseTarget;
+	FVector TargetLocation;
 	
 public :
     /**
